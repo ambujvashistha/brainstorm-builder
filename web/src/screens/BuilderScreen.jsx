@@ -6,8 +6,15 @@ export default function BuilderScreen() {
       { x: 50, y: 50, text: "A" },
       { x: 120, y: 120, text: "B" },
     ]);
+
+    function newElement(){
+        setElements((prev) => [...prev, { x: 50, y: 50, text: "new text" }]);
+    }
     
     return (
-        <Canvas elements={elements}/>
+      <>
+        <button onClick={newElement} >Add text</button>
+        <Canvas elements={elements} />
+      </>
     );
 }
