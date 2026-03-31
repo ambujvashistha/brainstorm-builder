@@ -1,10 +1,9 @@
-export default function Canvas({ elements }) {
-    console.log(elements)
+export default function Canvas({ elements, setActiveIndex }) {
+  console.log(elements);
   return (
     <div>
       <h1>Brainstorm Builder</h1>
 
-      
       <div
         style={{
           width: "100%",
@@ -13,16 +12,19 @@ export default function Canvas({ elements }) {
           position: "relative",
         }}
       >
-        {elements.map((ele)=>{
-            return <div
+        {elements.map((ele,index) => {
+          return (
+            <div
               style={{
                 position: "absolute",
                 left: ele.x,
                 top: ele.y,
               }}
+              onMouseDown={() => setActiveIndex(index)}
             >
               {ele.text}
-            </div>;
+            </div>
+          );
         })}
       </div>
     </div>
