@@ -1,32 +1,38 @@
-export default function Canvas({ elements, setActiveIndex }) {
-  console.log(elements);
+export default function Canvas({
+  elements,
+  setActiveIndex,
+  setIsDragging,
+  onMouseMove,
+  onMouseUp,
+}) {
   return (
-    <div>
-      <h1>Brainstorm Builder</h1>
-
-      <div
-        style={{
-          width: "100%",
-          height: "80vh",
-          border: "2px solid #ccc",
-          position: "relative",
-        }}
-      >
-        {elements.map((ele,index) => {
-          return (
-            <div
-              style={{
-                position: "absolute",
-                left: ele.x,
-                top: ele.y,
-              }}
-              onMouseDown={() => setActiveIndex(index)}
-            >
-              {ele.text}
-            </div>
-          );
-        })}
-      </div>
+    <div
+      style={{
+        width: "100%",
+        height: "80vh",
+        border: "2px solid #ccc",
+        position: "relative",
+      }}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+    >
+      {elements.map((ele, index) => (
+        <div
+          key={index}
+          style={{
+            position: "absolute",
+            left: ele.x,
+            top: ele.y,
+            cursor: "grab",
+          }}
+          onMouseDown={() => {
+            setActiveIndex(index);
+            setIsDragging(true);
+          }}
+        >
+          {ele.text}
+        </div>
+      ))}
     </div>
   );
 }
