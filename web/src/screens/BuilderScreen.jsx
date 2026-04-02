@@ -25,10 +25,19 @@ export default function BuilderScreen() {
       prev.map((ele, index) => {
         if (index === activeIndex) {
           console.log("x",e.clientX,"y",e.clientY)
+          const newX = e.clientX - rect.left - offset.x;
+          const newY = e.clientY - rect.top - offset.y;
+
+          const maxX = rect.width - 50;
+          const maxY = rect.height - 20;
+
+          const boundedX = Math.max(0, Math.min(newX, maxX));
+          const boundedY = Math.max(0, Math.min(newY, maxY));
+
           return {
             ...ele,
-            x: e.clientX - rect.left - offset.x,
-            y: e.clientY - rect.top - offset.y,
+            x: boundedX,
+            y: boundedY,
           };
         }
         return ele;
