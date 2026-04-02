@@ -1,12 +1,13 @@
 export default function Canvas({
   elements,
   setActiveIndex,
-  setIsDragging,
+  setMouseDown,
+  setOffset,
+  setElementSize,
   onMouseMove,
-  onMouseUp,
-  setOffset
+  isDragging,
+  activeIndex,
 }) {
-  
   return (
     <div
       style={{
@@ -16,7 +17,6 @@ export default function Canvas({
         position: "relative",
       }}
       onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
     >
       {elements.map((ele, index) => (
         <div
@@ -25,17 +25,26 @@ export default function Canvas({
             position: "absolute",
             left: ele.x,
             top: ele.y,
-            cursor: "grab",
+            cursor: isDragging ? "grabbing" : "grab",
+            border: index === activeIndex ? "1px solid rgb(255, 255, 255)" : "none",
+            padding: "2px",
           }}
           onMouseDown={(e) => {
-            const rect = e.currentTarget.parentElement.getBoundingClientRect();
+            const canvasRect =
+              e.currentTarget.parentElement.getBoundingClientRect();
+            const elRect = e.currentTarget.getBoundingClientRect();
 
             setActiveIndex(index);
-            setIsDragging(true);
+            setMouseDown(true);
 
             setOffset({
-              x: e.clientX - rect.left - ele.x,
-              y: e.clientY - rect.top - ele.y,
+              x: e.clientX - canvasRect.left - ele.x,
+              y: e.clientY - canvasRect.top - ele.y,
+            });
+
+            setElementSize({
+              width: elRect.width,
+              height: elRect.height,
             });
           }}
         >
