@@ -4,7 +4,9 @@ export default function Canvas({
   setIsDragging,
   onMouseMove,
   onMouseUp,
+  setOffset
 }) {
+  
   return (
     <div
       style={{
@@ -25,9 +27,16 @@ export default function Canvas({
             top: ele.y,
             cursor: "grab",
           }}
-          onMouseDown={() => {
+          onMouseDown={(e) => {
+            const rect = e.currentTarget.parentElement.getBoundingClientRect();
+
             setActiveIndex(index);
             setIsDragging(true);
+
+            setOffset({
+              x: e.clientX - rect.left - ele.x,
+              y: e.clientY - rect.top - ele.y,
+            });
           }}
         >
           {ele.text}
