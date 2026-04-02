@@ -1,15 +1,12 @@
-// import { useState } from 'react'
-import BuilderScreen from './screens/BuilderScreen'
-import Canvas from './builder/Canvas'
-import './App.css'
+import BuilderScreen from "./screens/BuilderScreen";
+import "./App.css";
 
 function App() {
-  
   return (
     <>
-    <BuilderScreen/>
+      <BuilderScreen />
     </>
-  )
+  );
 }
 
-export default App
+export default App;
