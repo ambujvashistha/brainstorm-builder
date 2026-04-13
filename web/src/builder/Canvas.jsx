@@ -3,16 +3,26 @@ export default function Canvas({
   canvasSize,
   elements,
   activeIndex,
+  editingIndex,
+  draftText,
   interaction,
   onCanvasPointerDown,
   onElementPointerDown,
   onElementResizePointerDown,
   onCanvasResizePointerDown,
+  onElementDoubleClick,
+  onDraftTextChange,
+  onDraftTextCommit,
+  onDraftTextCancel,
+  onDraftTextKeyDown,
 }) {
   return (
     <section className="builder">
       <div className="builder__meta">
-        <span>Canvas: {Math.round(canvasSize.width)} x {Math.round(canvasSize.height)}</span>
+        <span>
+          Canvas: {Math.round(canvasSize.width)} x{" "}
+          {Math.round(canvasSize.height)}
+        </span>
         <span>Drag cards and use the corners to resize</span>
       </div>
 
@@ -24,10 +34,13 @@ export default function Canvas({
       >
         {elements.map((element, index) => {
           const isActive = index === activeIndex;
+          const isEditing = index === editingIndex;
           const isDragging =
             interaction?.type === "drag-element" && interaction.index === index;
+
           const isResizing =
-            interaction?.type === "resize-element" && interaction.index === index;
+            interaction?.type === "resize-element" &&
+            interaction.index === index;
 
           return (
             <div
@@ -47,12 +60,50 @@ export default function Canvas({
                 height: element.height,
               }}
               onPointerDown={(event) => onElementPointerDown(event, index)}
+              onDoubleClick={() => onElementDoubleClick(index)}
             >
-              <span className="canvas__label">{element.text}</span>
+              {element.type === "text" &&
+                (isEditing ? (
+                  <input
+                    className="canvas__input"
+                    value={draftText}
+                    autoFocus
+                    onChange={(event) => onDraftTextChange(event.target.value)}
+                    onBlur={onDraftTextCommit}
+                    onKeyDown={onDraftTextKeyDown}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  />
+                ) : (
+                  <span className="canvas__label">{element.text}</span>
+                ))}
+
+              {element.type === "image" && (
+                <img
+                  src={element.src}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    pointerEvents: "none",
+                  }}
+                  draggable={false}
+                />
+              )}
+
+              {element.type === "container" && (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    border: "2px dashed #aaa",
+                    background: "rgba(0,0,0,0.03)",
+                  }}
+                />
+              )}
+
               <button
                 type="button"
                 className="canvas__resize-handle"
-                aria-label={`Resize ${element.text}`}
                 onPointerDown={(event) =>
                   onElementResizePointerDown(event, index)
                 }
@@ -64,7 +115,6 @@ export default function Canvas({
         <button
           type="button"
           className="canvas__corner-resize"
-          aria-label="Resize canvas"
           onPointerDown={onCanvasResizePointerDown}
         />
       </div>
