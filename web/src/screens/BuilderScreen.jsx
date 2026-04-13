@@ -92,9 +92,7 @@ export default function BuilderScreen() {
       }
     };
 
-    const handlePointerUp = () => {
-      setInteraction(null);
-    };
+    const handlePointerUp = () => setInteraction(null);
 
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
@@ -252,12 +250,23 @@ export default function BuilderScreen() {
   }
 
   function startEditing(index) {
-    if (elements[index].type !== "text") return;
+    const element = elements[index];
 
-    setActiveIndex(index);
-    setEditingIndex(index);
-    setDraftText(elements[index].text);
-    setInteraction(null);
+    if (element.type === "text") {
+      setActiveIndex(index);
+      setEditingIndex(index);
+      setDraftText(element.text);
+      setInteraction(null);
+    }
+
+    if (element.type === "image") {
+      const url = prompt("Enter image URL", element.src || "");
+      if (!url) return;
+
+      setElements((prev) =>
+        prev.map((el, i) => (i === index ? { ...el, src: url } : el)),
+      );
+    }
   }
 
   function commitDraftText() {
