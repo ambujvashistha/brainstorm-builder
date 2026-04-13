@@ -301,6 +301,18 @@
   white-space: nowrap;
 }
 
+.canvas__input {
+  width: 100%;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  outline: none;
+}
+
 .canvas__resize-handle,
 .canvas__corner-resize {
   position: absolute;
