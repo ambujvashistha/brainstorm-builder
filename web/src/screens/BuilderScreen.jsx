@@ -122,6 +122,21 @@ export default function BuilderScreen() {
     );
   }, [canvasSize]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (activeIndex === null) return;
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        setElements((prev) => prev.filter((_, i) => i !== activeIndex));
+        setActiveIndex(null);
+        setEditingIndex(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeIndex]);
+
   function addText() {
     const nextIndex = elements.length;
     const nextText = `Text ${nextIndex + 1}`;
