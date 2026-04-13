@@ -9,30 +9,30 @@ const MIN_CANVAS_HEIGHT = 320;
 export default function BuilderScreen() {
   const canvasRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(null);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [draftText, setDraftText] = useState("");
   const [canvasSize, setCanvasSize] = useState({ width: 760, height: 480 });
   const [interaction, setInteraction] = useState(null);
+
   const [elements, setElements] = useState([
-    { x: 48, y: 48, width: 130, height: 52, text: "Pikachu" },
-    { x: 210, y: 130, width: 140, height: 52, text: "Bulbasaur" },
+    { type: "text", x: 48, y: 48, width: 130, height: 52, text: "Pikachu" },
+    { type: "text", x: 210, y: 130, width: 140, height: 52, text: "Bulbasaur" },
   ]);
 
   useEffect(() => {
     const handlePointerMove = (event) => {
-      if (!interaction || !canvasRef.current) {
-        return;
-      }
+      if (!interaction || !canvasRef.current) return;
 
       const canvasRect = canvasRef.current.getBoundingClientRect();
 
       if (interaction.type === "drag-element") {
         setElements((prev) =>
           prev.map((element, index) => {
-            if (index !== interaction.index) {
-              return element;
-            }
+            if (index !== interaction.index) return element;
 
             const nextX =
               event.clientX - canvasRect.left - interaction.pointerOffset.x;
+
             const nextY =
               event.clientY - canvasRect.top - interaction.pointerOffset.y;
 
@@ -51,14 +51,15 @@ export default function BuilderScreen() {
       if (interaction.type === "resize-element") {
         setElements((prev) =>
           prev.map((element, index) => {
-            if (index !== interaction.index) {
-              return element;
-            }
+            if (index !== interaction.index) return element;
 
             const nextWidth =
-              interaction.startSize.width + (event.clientX - interaction.startPointer.x);
+              interaction.startSize.width +
+              (event.clientX - interaction.startPointer.x);
+
             const nextHeight =
-              interaction.startSize.height + (event.clientY - interaction.startPointer.y);
+              interaction.startSize.height +
+              (event.clientY - interaction.startPointer.y);
 
             return {
               ...element,
@@ -77,9 +78,12 @@ export default function BuilderScreen() {
 
       if (interaction.type === "resize-canvas") {
         const nextWidth =
-          interaction.startSize.width + (event.clientX - interaction.startPointer.x);
+          interaction.startSize.width +
+          (event.clientX - interaction.startPointer.x);
+
         const nextHeight =
-          interaction.startSize.height + (event.clientY - interaction.startPointer.y);
+          interaction.startSize.height +
+          (event.clientY - interaction.startPointer.y);
 
         setCanvasSize({
           width: Math.max(MIN_CANVAS_WIDTH, nextWidth),
@@ -118,39 +122,83 @@ export default function BuilderScreen() {
     );
   }, [canvasSize]);
 
-  function addElement() {
+  function addText() {
+    const nextIndex = elements.length;
+    const nextText = `Text ${nextIndex + 1}`;
+
+    setElements((prev) => [
+      ...prev,
+      {
+        type: "text",
+        x: 56 + nextIndex * 18,
+        y: 56 + nextIndex * 18,
+        width: 150,
+        height: 52,
+        text: nextText,
+      },
+    ]);
+
+    setActiveIndex(nextIndex);
+    setEditingIndex(nextIndex);
+    setDraftText(nextText);
+  }
+
+  function addImage() {
     const nextIndex = elements.length;
 
     setElements((prev) => [
       ...prev,
       {
-        x: 56 + nextIndex * 18,
-        y: 56 + nextIndex * 18,
-        width: 150,
-        height: 52,
-        text: `Text ${nextIndex + 1}`,
+        type: "image",
+        x: 100,
+        y: 100,
+        width: 200,
+        height: 140,
+        src: "https://via.placeholder.com/300x200",
       },
     ]);
+
+    setActiveIndex(nextIndex);
+  }
+
+  function addContainer() {
+    const nextIndex = elements.length;
+
+    setElements((prev) => [
+      ...prev,
+      {
+        type: "container",
+        x: 120,
+        y: 120,
+        width: 240,
+        height: 160,
+      },
+    ]);
+
     setActiveIndex(nextIndex);
   }
 
   function handleCanvasPointerDown(event) {
     if (event.target === event.currentTarget) {
+      commitDraftText();
       setActiveIndex(null);
     }
   }
 
   function handleElementPointerDown(event, index) {
-    if (!canvasRef.current) {
-      return;
-    }
+    if (!canvasRef.current) return;
 
     event.preventDefault();
+
+    if (editingIndex !== null && editingIndex !== index) {
+      commitDraftText();
+    }
 
     const canvasRect = canvasRef.current.getBoundingClientRect();
     const element = elements[index];
 
     setActiveIndex(index);
+
     setInteraction({
       type: "drag-element",
       index,
@@ -168,6 +216,7 @@ export default function BuilderScreen() {
     const element = elements[index];
 
     setActiveIndex(index);
+
     setInteraction({
       type: "resize-element",
       index,
@@ -187,6 +236,46 @@ export default function BuilderScreen() {
     });
   }
 
+  function startEditing(index) {
+    if (elements[index].type !== "text") return;
+
+    setActiveIndex(index);
+    setEditingIndex(index);
+    setDraftText(elements[index].text);
+    setInteraction(null);
+  }
+
+  function commitDraftText() {
+    if (editingIndex === null) return;
+
+    const nextText = draftText.trim() || "Untitled";
+
+    setElements((prev) =>
+      prev.map((element, index) =>
+        index === editingIndex ? { ...element, text: nextText } : element,
+      ),
+    );
+
+    setEditingIndex(null);
+  }
+
+  function cancelEditing() {
+    setEditingIndex(null);
+    setDraftText("");
+  }
+
+  function handleDraftKeyDown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commitDraftText();
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelEditing();
+    }
+  }
+
   return (
     <main className="builder-screen">
       <div className="builder-screen__header">
@@ -194,9 +283,20 @@ export default function BuilderScreen() {
           <h1>Brainstorm Builder</h1>
           <p>A small editor for arranging and resizing idea blocks.</p>
         </div>
-        <button className="builder-screen__button" onClick={addElement}>
-          Add text
-        </button>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="builder-screen__button" onClick={addText}>
+            Add Text
+          </button>
+
+          <button className="builder-screen__button" onClick={addImage}>
+            Add Image
+          </button>
+
+          <button className="builder-screen__button" onClick={addContainer}>
+            Add Container
+          </button>
+        </div>
       </div>
 
       <Canvas
@@ -204,11 +304,18 @@ export default function BuilderScreen() {
         canvasSize={canvasSize}
         elements={elements}
         activeIndex={activeIndex}
+        editingIndex={editingIndex}
+        draftText={draftText}
         interaction={interaction}
         onCanvasPointerDown={handleCanvasPointerDown}
         onElementPointerDown={handleElementPointerDown}
         onElementResizePointerDown={handleElementResizePointerDown}
         onCanvasResizePointerDown={handleCanvasResizePointerDown}
+        onElementDoubleClick={startEditing}
+        onDraftTextChange={setDraftText}
+        onDraftTextCommit={commitDraftText}
+        onDraftTextCancel={cancelEditing}
+        onDraftTextKeyDown={handleDraftKeyDown}
       />
     </main>
   );
