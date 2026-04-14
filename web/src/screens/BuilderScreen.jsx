@@ -20,7 +20,12 @@ export default function BuilderScreen() {
   ]);
 
   function exportJSON() {
-    const json = JSON.stringify(elements, null, 2);
+    const payload = {
+      canvas: canvasSize,
+      elements,
+    };
+
+    const json = JSON.stringify(payload, null, 2);
     navigator.clipboard.writeText(json);
     alert("Layout JSON copied to clipboard");
   }
@@ -31,7 +36,15 @@ export default function BuilderScreen() {
 
     try {
       const parsed = JSON.parse(input);
-      setElements(parsed);
+
+      if (parsed.canvas) {
+        setCanvasSize(parsed.canvas);
+      }
+
+      if (parsed.elements) {
+        setElements(parsed.elements);
+      }
+
       setActiveIndex(null);
     } catch {
       alert("Invalid JSON");
