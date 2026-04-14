@@ -19,6 +19,25 @@ export default function BuilderScreen() {
     { type: "text", x: 210, y: 130, width: 140, height: 52, text: "Bulbasaur" },
   ]);
 
+  function exportJSON() {
+    const json = JSON.stringify(elements, null, 2);
+    navigator.clipboard.writeText(json);
+    alert("Layout JSON copied to clipboard");
+  }
+
+  function importJSON() {
+    const input = prompt("Paste layout JSON");
+    if (!input) return;
+
+    try {
+      const parsed = JSON.parse(input);
+      setElements(parsed);
+      setActiveIndex(null);
+    } catch {
+      alert("Invalid JSON");
+    }
+  }
+
   useEffect(() => {
     const handlePointerMove = (event) => {
       if (!interaction || !canvasRef.current) return;
@@ -308,7 +327,7 @@ export default function BuilderScreen() {
           <p>A small editor for arranging and resizing idea blocks.</p>
         </div>
 
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="builder-screen__button" onClick={addText}>
             Add Text
           </button>
@@ -319,6 +338,14 @@ export default function BuilderScreen() {
 
           <button className="builder-screen__button" onClick={addContainer}>
             Add Container
+          </button>
+
+          <button className="builder-screen__button" onClick={exportJSON}>
+            Export JSON
+          </button>
+
+          <button className="builder-screen__button" onClick={importJSON}>
+            Load JSON
           </button>
         </div>
       </div>
