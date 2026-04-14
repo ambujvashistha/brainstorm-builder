@@ -162,6 +162,23 @@ export default function BuilderScreen() {
         setActiveIndex(null);
         setEditingIndex(null);
       }
+      
+      if ((e.ctrlKey || e.metaKey) && e.key === "d") {
+        e.preventDefault();
+
+        if (activeIndex === null) return;
+
+        const element = elements[activeIndex];
+
+        setElements((prev) => [
+          ...prev,
+          {
+            ...element,
+            x: element.x + 20,
+            y: element.y + 20,
+          },
+        ]);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);

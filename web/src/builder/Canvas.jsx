@@ -13,7 +13,7 @@ export default function Canvas({
   onElementDoubleClick,
   onDraftTextChange,
   onDraftTextCommit,
-  onDraftTextCancel,
+  // onDraftTextCancel,
   onDraftTextKeyDown,
 }) {
   return (
