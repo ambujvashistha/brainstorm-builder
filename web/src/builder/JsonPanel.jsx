@@ -28,13 +28,22 @@ export default function JsonPanel({ elements, canvasSize, onImport }) {
     URL.revokeObjectURL(url);
   }
 
-  function handleImport() {
-    try {
-      const parsed = JSON.parse(jsonText);
-      onImport(parsed);
-    } catch {
-      alert("Invalid JSON");
-    }
+  function handleFileImport(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        onImport(parsed);
+      } catch {
+        alert("Invalid JSON file");
+      }
+    };
+
+    reader.readAsText(file);
   }
 
   return (
@@ -54,9 +63,15 @@ export default function JsonPanel({ elements, canvasSize, onImport }) {
         <button className="builder-screen__button" onClick={handleDownload}>
           Download
         </button>
-        <button className="builder-screen__button" onClick={handleImport}>
-          Load
-        </button>
+        <label className="builder-screen__button">
+          Load File
+          <input
+            type="file"
+            accept="application/json"
+            hidden
+            onChange={handleFileImport}
+          />
+        </label>
       </div>
     </aside>
   );
