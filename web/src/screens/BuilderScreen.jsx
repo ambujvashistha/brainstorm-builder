@@ -162,7 +162,7 @@ export default function BuilderScreen() {
         setActiveIndex(null);
         setEditingIndex(null);
       }
-      
+
       if ((e.ctrlKey || e.metaKey) && e.key === "d") {
         e.preventDefault();
 
@@ -178,6 +178,29 @@ export default function BuilderScreen() {
             y: element.y + 20,
           },
         ]);
+      }
+
+      if (activeIndex !== null) {
+        const move = e.shiftKey ? 10 : 1;
+
+        if (
+          ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
+        ) {
+          e.preventDefault();
+
+          setElements((prev) =>
+            prev.map((el, i) => {
+              if (i !== activeIndex) return el;
+
+              if (e.key === "ArrowUp") return { ...el, y: el.y - move };
+              if (e.key === "ArrowDown") return { ...el, y: el.y + move };
+              if (e.key === "ArrowLeft") return { ...el, x: el.x - move };
+              if (e.key === "ArrowRight") return { ...el, x: el.x + move };
+
+              return el;
+            }),
+          );
+        }
       }
     };
 
