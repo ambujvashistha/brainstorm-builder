@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Canvas from "../builder/Canvas";
+import JsonPanel from "../builder/JsonPanel";
 
 const MIN_CARD_WIDTH = 90;
 const MIN_CARD_HEIGHT = 44;
@@ -334,53 +335,67 @@ export default function BuilderScreen() {
 
   return (
     <main className="builder-screen">
-      <div className="builder-screen__header">
-        <div>
-          <h1>Brainstorm Builder</h1>
-          <p>A small editor for arranging and resizing idea blocks.</p>
+      <div className="builder-left">
+        <div className="builder-screen__header">
+          <div>
+            <h1>Brainstorm Builder</h1>
+            <p>A small editor for arranging and resizing idea blocks.</p>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="builder-screen__button" onClick={addText}>
+              Add Text
+            </button>
+
+            <button className="builder-screen__button" onClick={addImage}>
+              Add Image
+            </button>
+
+            <button className="builder-screen__button" onClick={addContainer}>
+              Add Container
+            </button>
+
+            <button className="builder-screen__button" onClick={exportJSON}>
+              Export JSON
+            </button>
+
+            <button className="builder-screen__button" onClick={importJSON}>
+              Load JSON
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button className="builder-screen__button" onClick={addText}>
-            Add Text
-          </button>
-
-          <button className="builder-screen__button" onClick={addImage}>
-            Add Image
-          </button>
-
-          <button className="builder-screen__button" onClick={addContainer}>
-            Add Container
-          </button>
-
-          <button className="builder-screen__button" onClick={exportJSON}>
-            Export JSON
-          </button>
-
-          <button className="builder-screen__button" onClick={importJSON}>
-            Load JSON
-          </button>
-        </div>
+        <Canvas
+          canvasRef={canvasRef}
+          canvasSize={canvasSize}
+          elements={elements}
+          activeIndex={activeIndex}
+          editingIndex={editingIndex}
+          draftText={draftText}
+          interaction={interaction}
+          onCanvasPointerDown={handleCanvasPointerDown}
+          onElementPointerDown={handleElementPointerDown}
+          onElementResizePointerDown={handleElementResizePointerDown}
+          onCanvasResizePointerDown={handleCanvasResizePointerDown}
+          onElementDoubleClick={startEditing}
+          onDraftTextChange={setDraftText}
+          onDraftTextCommit={commitDraftText}
+          onDraftTextCancel={cancelEditing}
+          onDraftTextKeyDown={handleDraftKeyDown}
+        />
       </div>
 
-      <Canvas
-        canvasRef={canvasRef}
-        canvasSize={canvasSize}
-        elements={elements}
-        activeIndex={activeIndex}
-        editingIndex={editingIndex}
-        draftText={draftText}
-        interaction={interaction}
-        onCanvasPointerDown={handleCanvasPointerDown}
-        onElementPointerDown={handleElementPointerDown}
-        onElementResizePointerDown={handleElementResizePointerDown}
-        onCanvasResizePointerDown={handleCanvasResizePointerDown}
-        onElementDoubleClick={startEditing}
-        onDraftTextChange={setDraftText}
-        onDraftTextCommit={commitDraftText}
-        onDraftTextCancel={cancelEditing}
-        onDraftTextKeyDown={handleDraftKeyDown}
-      />
+      <div className="builder-right">
+        <JsonPanel
+          elements={elements}
+          canvasSize={canvasSize}
+          onImport={(data) => {
+            if (data.canvas) setCanvasSize(data.canvas);
+            if (data.elements) setElements(data.elements);
+            setActiveIndex(null);
+          }}
+        />
+      </div>
     </main>
   );
 }
