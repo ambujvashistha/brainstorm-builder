@@ -13,8 +13,8 @@ export default function Canvas({
   onElementDoubleClick,
   onDraftTextChange,
   onDraftTextCommit,
-  // onDraftTextCancel,
   onDraftTextKeyDown,
+  toolbar,
 }) {
   return (
     <section className="builder">
@@ -78,27 +78,11 @@ export default function Canvas({
                 ))}
 
               {element.type === "image" && (
-                <img
-                  src={element.src}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    pointerEvents: "none",
-                  }}
-                  draggable={false}
-                />
+                <img src={element.src} className="canvas__image" draggable={false} />
               )}
 
               {element.type === "container" && (
-                <div
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    border: "2px dashed #aaa",
-                    background: "rgba(0,0,0,0.03)",
-                  }}
-                />
+                <div className="canvas__container" />
               )}
 
               <button
@@ -117,6 +101,8 @@ export default function Canvas({
           className="canvas__corner-resize"
           onPointerDown={onCanvasResizePointerDown}
         />
+
+        <div className="canvas-toolbar">{toolbar}</div>
       </div>
     </section>
   );
