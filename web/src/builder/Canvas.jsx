@@ -14,23 +14,28 @@ export default function Canvas({
   onDraftTextChange,
   onDraftTextCommit,
   onDraftTextKeyDown,
+  isPreviewMode,
   toolbar,
 }) {
   return (
     <section className="builder">
-      <div className="builder__meta">
-        <span>
-          Canvas: {Math.round(canvasSize.width)} x{" "}
-          {Math.round(canvasSize.height)}
-        </span>
-        <span>Drag cards and use the corners to resize</span>
-      </div>
+      {!isPreviewMode && (
+        <div className="builder__meta">
+          <span>
+            Canvas: {Math.round(canvasSize.width)} x{" "}
+            {Math.round(canvasSize.height)}
+          </span>
+          <span>Drag cards and use the corners to resize</span>
+        </div>
+      )}
 
       <div
         ref={canvasRef}
-        className={`canvas ${interaction ? "canvas--active" : ""}`}
+        className={`canvas ${interaction ? "canvas--active" : ""} ${
+          isPreviewMode ? "canvas--preview" : ""
+        }`}
         style={{ width: canvasSize.width, height: canvasSize.height }}
-        onPointerDown={onCanvasPointerDown}
+        onPointerDown={isPreviewMode ? undefined : onCanvasPointerDown}
       >
         {elements.map((element, index) => {
           const isActive = index === activeIndex;
@@ -47,7 +52,7 @@ export default function Canvas({
               key={index}
               className={[
                 "canvas__item",
-                isActive ? "canvas__item--selected" : "",
+                !isPreviewMode && isActive ? "canvas__item--selected" : "",
                 isDragging ? "canvas__item--dragging" : "",
                 isResizing ? "canvas__item--resizing" : "",
               ]
@@ -59,8 +64,10 @@ export default function Canvas({
                 width: element.width,
                 height: element.height,
               }}
-              onPointerDown={(event) => onElementPointerDown(event, index)}
-              onDoubleClick={() => onElementDoubleClick(index)}
+              onPointerDown={
+                isPreviewMode ? undefined : (event) => onElementPointerDown(event, index)
+              }
+              onDoubleClick={isPreviewMode ? undefined : () => onElementDoubleClick(index)}
             >
               {element.type === "text" &&
                 (isEditing ? (
@@ -103,24 +110,28 @@ export default function Canvas({
                 />
               )}
 
-              <button
-                type="button"
-                className="canvas__resize-handle"
-                onPointerDown={(event) =>
-                  onElementResizePointerDown(event, index)
-                }
-              />
+              {!isPreviewMode && (
+                <button
+                  type="button"
+                  className="canvas__resize-handle"
+                  onPointerDown={(event) =>
+                    onElementResizePointerDown(event, index)
+                  }
+                />
+              )}
             </div>
           );
         })}
 
-        <button
-          type="button"
-          className="canvas__corner-resize"
-          onPointerDown={onCanvasResizePointerDown}
-        />
+        {!isPreviewMode && (
+          <button
+            type="button"
+            className="canvas__corner-resize"
+            onPointerDown={onCanvasResizePointerDown}
+          />
+        )}
 
-        <div className="canvas-toolbar">{toolbar}</div>
+        {!isPreviewMode && <div className="canvas-toolbar">{toolbar}</div>}
       </div>
     </section>
   );
