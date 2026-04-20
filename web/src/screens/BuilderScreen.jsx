@@ -98,11 +98,19 @@ export default function BuilderScreen() {
       if (!interaction || !canvasRef.current) return;
 
       const canvasRect = canvasRef.current.getBoundingClientRect();
+      const bounds = { width: canvasRect.width, height: canvasRect.height };
 
       if (interaction.type === "drag-element") {
         setElements((prev) =>
           prev.map((element, index) => {
             if (index !== interaction.index) return element;
+
+            const activeNode = canvasRef.current?.querySelector(
+              `[data-id="${interaction.index}"]`,
+            );
+            const activeRect = activeNode?.getBoundingClientRect();
+            const measuredWidth = activeRect?.width ?? element.width;
+            const measuredHeight = activeRect?.height ?? element.height;
 
             const nextX =
               event.clientX - canvasRect.left - interaction.pointerOffset.x;
@@ -112,10 +120,19 @@ export default function BuilderScreen() {
 
             return {
               ...element,
-              x: Math.max(0, Math.min(nextX, canvasRect.width - element.width)),
+              x: Math.max(
+                0,
+                Math.min(
+                  nextX,
+                  bounds.width - measuredWidth,
+                ),
+              ),
               y: Math.max(
                 0,
-                Math.min(nextY, canvasRect.height - element.height),
+                Math.min(
+                  nextY,
+                  bounds.height - measuredHeight,
+                ),
               ),
             };
           }),
@@ -139,11 +156,11 @@ export default function BuilderScreen() {
               ...element,
               width: Math.max(
                 MIN_CARD_WIDTH,
-                Math.min(nextWidth, canvasRect.width - element.x),
+                Math.min(nextWidth, bounds.width - element.x),
               ),
               height: Math.max(
                 MIN_CARD_HEIGHT,
-                Math.min(nextHeight, canvasRect.height - element.y),
+                Math.min(nextHeight, bounds.height - element.y),
               ),
             };
           }),
@@ -265,6 +282,19 @@ export default function BuilderScreen() {
 
     window.addEventListener("pointerdown", handleOutsidePointerDown);
     return () => window.removeEventListener("pointerdown", handleOutsidePointerDown);
+  }, [isPreviewMode]);
+
+  useEffect(() => {
+    if (!isPreviewMode) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsPreviewMode(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isPreviewMode]);
 
   function addText() {
@@ -479,18 +509,45 @@ export default function BuilderScreen() {
   }
 
   function togglePreviewMode() {
-    setIsPreviewMode((prev) => {
-      const next = !prev;
-      if (next) {
-        setInteraction(null);
-        setEditingIndex(null);
-        setActiveIndex(null);
-      }
-      return next;
-    });
+    setInteraction(null);
+    setEditingIndex(null);
+    setActiveIndex(null);
+    setIsPreviewMode((prev) => !prev);
   }
 
   const selectedElement = activeIndex !== null ? elements[activeIndex] : null;
+
+  const canvasProps = {
+    canvasRef,
+    canvasSize,
+    elements,
+    activeIndex,
+    editingIndex,
+    draftText,
+    interaction,
+    onCanvasPointerDown: handleCanvasPointerDown,
+    onElementPointerDown: handleElementPointerDown,
+    onElementResizePointerDown: handleElementResizePointerDown,
+    onCanvasResizePointerDown: handleCanvasResizePointerDown,
+    onElementDoubleClick: startEditing,
+    onDraftTextChange: setDraftText,
+    onDraftTextCommit: commitDraftText,
+    onDraftTextKeyDown: handleDraftKeyDown,
+    isPreviewMode,
+    toolbar: (
+      <>
+        <button className="canvas-toolbar__button canvas-toolbar__button--primary" onClick={addText}>
+          Add Text
+        </button>
+        <button className="canvas-toolbar__button canvas-toolbar__button--secondary" onClick={addImage}>
+          Add Image
+        </button>
+        <button className="canvas-toolbar__button canvas-toolbar__button--secondary" onClick={addContainer}>
+          Add Container
+        </button>
+      </>
+    ),
+  };
 
   return (
     <main className={`builder-screen ${isPreviewMode ? "builder-screen--preview" : ""}`}>
@@ -520,80 +577,57 @@ export default function BuilderScreen() {
         />
       )}
 
-      <section className="builder-left">
-        <div className="builder-screen__header">
-          <div>
-            <h1>Brainstorm Builder</h1>
-            <p>A small editor for arranging and resizing idea blocks.</p>
-          </div>
+      <section className={`builder-left ${isPreviewMode ? "builder-left--preview" : ""}`}>
+        {!isPreviewMode && (
+          <div className="builder-screen__header">
+            <div>
+              <h1>Brainstorm Builder</h1>
+              <p>A small editor for arranging and resizing idea blocks.</p>
+            </div>
 
-          <div className="builder-screen__actions">
-            {!isPreviewMode && (
-              <>
-                <button
-                  className="builder-screen__button builder-screen__button--secondary"
-                  onClick={exportJSON}
-                >
-                  Export JSON
-                </button>
-                <button
-                  className="builder-screen__button builder-screen__button--secondary"
-                  onClick={importJSON}
-                >
-                  Load JSON
-                </button>
-              </>
-            )}
-            {isPreviewMode && (
+            <div className="builder-screen__actions">
               <button
                 className="builder-screen__button builder-screen__button--secondary"
                 onClick={exportJSON}
               >
-                Share JSON
+                Export JSON
               </button>
-            )}
-            <button
-              className={`builder-screen__button builder-screen__button--toggle ${
-                isPreviewMode ? "is-active" : ""
-              }`}
-              onClick={togglePreviewMode}
-            >
-              {isPreviewMode ? "Edit" : "Preview"}
-            </button>
+              <button
+                className="builder-screen__button builder-screen__button--secondary"
+                onClick={importJSON}
+              >
+                Load JSON
+              </button>
+              <button
+                className={`builder-screen__button builder-screen__button--toggle ${
+                  isPreviewMode ? "is-active" : ""
+                }`}
+                onClick={togglePreviewMode}
+              >
+                {isPreviewMode ? "Edit" : "Preview"}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        <Canvas
-          canvasRef={canvasRef}
-          canvasSize={canvasSize}
-          elements={elements}
-          activeIndex={activeIndex}
-          editingIndex={editingIndex}
-          draftText={draftText}
-          interaction={interaction}
-          onCanvasPointerDown={handleCanvasPointerDown}
-          onElementPointerDown={handleElementPointerDown}
-          onElementResizePointerDown={handleElementResizePointerDown}
-          onCanvasResizePointerDown={handleCanvasResizePointerDown}
-          onElementDoubleClick={startEditing}
-          onDraftTextChange={setDraftText}
-          onDraftTextCommit={commitDraftText}
-          onDraftTextKeyDown={handleDraftKeyDown}
-          isPreviewMode={isPreviewMode}
-          toolbar={
-            <>
-              <button className="canvas-toolbar__button canvas-toolbar__button--primary" onClick={addText}>
-                Add Text
+        {isPreviewMode ? (
+          <div className="preview-wrapper">
+            <div className="preview-header">
+              <button
+                className="preview-back-button"
+                onClick={togglePreviewMode}
+              >
+                Back
               </button>
-              <button className="canvas-toolbar__button canvas-toolbar__button--secondary" onClick={addImage}>
-                Add Image
-              </button>
-              <button className="canvas-toolbar__button canvas-toolbar__button--secondary" onClick={addContainer}>
-                Add Container
-              </button>
-            </>
-          }
-        />
+              <h2>Mobile Preview</h2>
+            </div>
+            <div className="phone-frame">
+              <Canvas {...canvasProps} />
+            </div>
+          </div>
+        ) : (
+          <Canvas {...canvasProps} />
+        )}
       </section>
 
       {!isPreviewMode && (
