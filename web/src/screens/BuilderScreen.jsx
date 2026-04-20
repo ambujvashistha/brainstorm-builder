@@ -29,6 +29,7 @@ function normalizeElements(elements, canvas) {
 
 export default function BuilderScreen() {
   const canvasRef = useRef(null);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [activeIndex, setActiveIndex] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [draftText, setDraftText] = useState("");
@@ -91,6 +92,8 @@ export default function BuilderScreen() {
   }
 
   useEffect(() => {
+    if (isPreviewMode) return;
+
     const handlePointerMove = (event) => {
       if (!interaction || !canvasRef.current) return;
 
@@ -175,9 +178,11 @@ export default function BuilderScreen() {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [interaction]);
+  }, [interaction, isPreviewMode]);
 
   useEffect(() => {
+    if (isPreviewMode) return;
+
     const handleKeyDown = (e) => {
       if (activeIndex === null) return;
 
@@ -237,9 +242,11 @@ export default function BuilderScreen() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, canvasSize]);
+  }, [activeIndex, canvasSize, isPreviewMode]);
 
   useEffect(() => {
+    if (isPreviewMode) return;
+
     const handleOutsidePointerDown = (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
@@ -258,7 +265,7 @@ export default function BuilderScreen() {
 
     window.addEventListener("pointerdown", handleOutsidePointerDown);
     return () => window.removeEventListener("pointerdown", handleOutsidePointerDown);
-  }, []);
+  }, [isPreviewMode]);
 
   function addText() {
     const nextIndex = elements.length;
@@ -336,6 +343,8 @@ export default function BuilderScreen() {
   }
 
   function handleCanvasPointerDown(event) {
+    if (isPreviewMode) return;
+
     if (event.target === event.currentTarget) {
       commitDraftText();
       setActiveIndex(null);
@@ -343,6 +352,7 @@ export default function BuilderScreen() {
   }
 
   function handleElementPointerDown(event, index) {
+    if (isPreviewMode) return;
     if (!canvasRef.current) return;
 
     event.preventDefault();
@@ -367,6 +377,7 @@ export default function BuilderScreen() {
   }
 
   function handleElementResizePointerDown(event, index) {
+    if (isPreviewMode) return;
     event.preventDefault();
     event.stopPropagation();
 
@@ -383,6 +394,7 @@ export default function BuilderScreen() {
   }
 
   function handleCanvasResizePointerDown(event) {
+    if (isPreviewMode) return;
     event.preventDefault();
     event.stopPropagation();
 
@@ -394,6 +406,7 @@ export default function BuilderScreen() {
   }
 
   function startEditing(index) {
+    if (isPreviewMode) return;
     const element = elements[index];
 
     if (element.type === "text") {
@@ -465,11 +478,23 @@ export default function BuilderScreen() {
     setEditingIndex(null);
   }
 
+  function togglePreviewMode() {
+    setIsPreviewMode((prev) => {
+      const next = !prev;
+      if (next) {
+        setInteraction(null);
+        setEditingIndex(null);
+        setActiveIndex(null);
+      }
+      return next;
+    });
+  }
+
   const selectedElement = activeIndex !== null ? elements[activeIndex] : null;
 
   return (
-    <main className="builder-screen">
-      {selectedElement && (
+    <main className={`builder-screen ${isPreviewMode ? "builder-screen--preview" : ""}`}>
+      {!isPreviewMode && selectedElement && (
         <EditPanel
           element={selectedElement}
           onTextChange={(text) => {
@@ -503,17 +528,37 @@ export default function BuilderScreen() {
           </div>
 
           <div className="builder-screen__actions">
+            {!isPreviewMode && (
+              <>
+                <button
+                  className="builder-screen__button builder-screen__button--secondary"
+                  onClick={exportJSON}
+                >
+                  Export JSON
+                </button>
+                <button
+                  className="builder-screen__button builder-screen__button--secondary"
+                  onClick={importJSON}
+                >
+                  Load JSON
+                </button>
+              </>
+            )}
+            {isPreviewMode && (
+              <button
+                className="builder-screen__button builder-screen__button--secondary"
+                onClick={exportJSON}
+              >
+                Share JSON
+              </button>
+            )}
             <button
-              className="builder-screen__button builder-screen__button--secondary"
-              onClick={exportJSON}
+              className={`builder-screen__button builder-screen__button--toggle ${
+                isPreviewMode ? "is-active" : ""
+              }`}
+              onClick={togglePreviewMode}
             >
-              Export JSON
-            </button>
-            <button
-              className="builder-screen__button builder-screen__button--secondary"
-              onClick={importJSON}
-            >
-              Load JSON
+              {isPreviewMode ? "Edit" : "Preview"}
             </button>
           </div>
         </div>
@@ -534,6 +579,7 @@ export default function BuilderScreen() {
           onDraftTextChange={setDraftText}
           onDraftTextCommit={commitDraftText}
           onDraftTextKeyDown={handleDraftKeyDown}
+          isPreviewMode={isPreviewMode}
           toolbar={
             <>
               <button className="canvas-toolbar__button canvas-toolbar__button--primary" onClick={addText}>
@@ -550,24 +596,26 @@ export default function BuilderScreen() {
         />
       </section>
 
-      <aside className="builder-right">
-        <JsonPanel
-          elements={elements}
-          canvasSize={canvasSize}
-          onImport={(data) => {
-            const nextCanvas = data.canvas
-              ? {
-                  width: Math.max(MIN_CANVAS_WIDTH, Number(data.canvas.width) || MIN_CANVAS_WIDTH),
-                  height: Math.max(MIN_CANVAS_HEIGHT, Number(data.canvas.height) || MIN_CANVAS_HEIGHT),
-                }
-              : canvasSize;
+      {!isPreviewMode && (
+        <aside className="builder-right">
+          <JsonPanel
+            elements={elements}
+            canvasSize={canvasSize}
+            onImport={(data) => {
+              const nextCanvas = data.canvas
+                ? {
+                    width: Math.max(MIN_CANVAS_WIDTH, Number(data.canvas.width) || MIN_CANVAS_WIDTH),
+                    height: Math.max(MIN_CANVAS_HEIGHT, Number(data.canvas.height) || MIN_CANVAS_HEIGHT),
+                  }
+                : canvasSize;
 
-            if (data.canvas) setCanvasSize(nextCanvas);
-            if (data.elements) setElements(normalizeElements(data.elements, nextCanvas));
-            setActiveIndex(null);
-          }}
-        />
-      </aside>
+              if (data.canvas) setCanvasSize(nextCanvas);
+              if (data.elements) setElements(normalizeElements(data.elements, nextCanvas));
+              setActiveIndex(null);
+            }}
+          />
+        </aside>
+      )}
     </main>
   );
 }
