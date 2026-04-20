@@ -36,6 +36,13 @@ body {
   background: var(--surface);
 }
 
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
 #root {
   min-height: 100svh;
 }

@@ -34,7 +34,12 @@ export default function Canvas({
         className={`canvas ${interaction ? "canvas--active" : ""} ${
           isPreviewMode ? "canvas--preview" : ""
         }`}
-        style={{ width: canvasSize.width, height: canvasSize.height }}
+        style={{
+          width: "100%",
+          height: isPreviewMode ? "100%" : canvasSize.height,
+          position: "relative",
+          background: isPreviewMode ? "#fff" : undefined,
+        }}
         onPointerDown={isPreviewMode ? undefined : onCanvasPointerDown}
       >
         {elements.map((element, index) => {
@@ -47,9 +52,28 @@ export default function Canvas({
             interaction?.type === "resize-element" &&
             interaction.index === index;
 
+          const itemStyle =
+            isPreviewMode && element.type === "text"
+              ? {
+                  left: element.x,
+                  top: element.y,
+                  minWidth: 80,
+                  width: "fit-content",
+                  height: "auto",
+                  padding: "10px 16px",
+                  whiteSpace: "nowrap",
+                }
+              : {
+                  left: element.x,
+                  top: element.y,
+                  width: element.width,
+                  height: element.height,
+                };
+
           return (
             <div
               key={index}
+              data-id={index}
               className={[
                 "canvas__item",
                 !isPreviewMode && isActive ? "canvas__item--selected" : "",
@@ -58,12 +82,7 @@ export default function Canvas({
               ]
                 .filter(Boolean)
                 .join(" ")}
-              style={{
-                left: element.x,
-                top: element.y,
-                width: element.width,
-                height: element.height,
-              }}
+              style={itemStyle}
               onPointerDown={
                 isPreviewMode ? undefined : (event) => onElementPointerDown(event, index)
               }
