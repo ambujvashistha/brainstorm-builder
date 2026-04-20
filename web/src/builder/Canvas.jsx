@@ -72,9 +72,21 @@ export default function Canvas({
                     onBlur={onDraftTextCommit}
                     onKeyDown={onDraftTextKeyDown}
                     onPointerDown={(event) => event.stopPropagation()}
+                    style={{
+                      fontSize: element.fontSize || 16,
+                      color: element.color || "#191c1d",
+                    }}
                   />
                 ) : (
-                  <span className="canvas__label">{element.text}</span>
+                  <span
+                    className="canvas__label"
+                    style={{
+                      fontSize: element.fontSize || 16,
+                      color: element.color || "#191c1d",
+                    }}
+                  >
+                    {element.text}
+                  </span>
                 ))}
 
               {element.type === "image" && (
@@ -82,7 +94,13 @@ export default function Canvas({
               )}
 
               {element.type === "container" && (
-                <div className="canvas__container" />
+                <div
+                  className="canvas__container"
+                  style={{
+                    backgroundColor: element.backgroundColor || "#e7e8e9",
+                    borderRadius: element.borderRadius || 12,
+                  }}
+                />
               )}
 
               <button
