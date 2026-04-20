@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Canvas from "../builder/Canvas";
+import EditPanel from "../builder/EditPanel";
 import JsonPanel from "../builder/JsonPanel";
 
 const MIN_CARD_WIDTH = 90;
@@ -35,8 +36,26 @@ export default function BuilderScreen() {
   const [interaction, setInteraction] = useState(null);
 
   const [elements, setElements] = useState([
-    { type: "text", x: 48, y: 48, width: 130, height: 52, text: "Pikachu" },
-    { type: "text", x: 210, y: 130, width: 140, height: 52, text: "Bulbasaur" },
+    {
+      type: "text",
+      x: 48,
+      y: 48,
+      width: 130,
+      height: 52,
+      text: "Pikachu",
+      fontSize: 16,
+      color: "#191c1d",
+    },
+    {
+      type: "text",
+      x: 210,
+      y: 130,
+      width: 140,
+      height: 52,
+      text: "Bulbasaur",
+      fontSize: 16,
+      color: "#191c1d",
+    },
   ]);
 
   function exportJSON() {
@@ -220,6 +239,27 @@ export default function BuilderScreen() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeIndex, canvasSize]);
 
+  useEffect(() => {
+    const handleOutsidePointerDown = (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      if (
+        target.closest(".canvas__item") ||
+        target.closest(".edit-panel") ||
+        target.closest(".canvas-toolbar")
+      ) {
+        return;
+      }
+
+      setActiveIndex(null);
+      setEditingIndex(null);
+    };
+
+    window.addEventListener("pointerdown", handleOutsidePointerDown);
+    return () => window.removeEventListener("pointerdown", handleOutsidePointerDown);
+  }, []);
+
   function addText() {
     const nextIndex = elements.length;
     const nextText = `Text ${nextIndex + 1}`;
@@ -232,6 +272,8 @@ export default function BuilderScreen() {
         width: 150,
         height: 52,
         text: nextText,
+        fontSize: 16,
+        color: "#191c1d",
       },
       canvasSize,
     );
@@ -279,6 +321,8 @@ export default function BuilderScreen() {
         y: 120,
         width: 240,
         height: 160,
+        backgroundColor: "#e7e8e9",
+        borderRadius: 12,
       },
       canvasSize,
     );
@@ -358,15 +402,6 @@ export default function BuilderScreen() {
       setDraftText(element.text);
       setInteraction(null);
     }
-
-    if (element.type === "image") {
-      const url = prompt("Enter image URL", element.src || "");
-      if (!url) return;
-
-      setElements((prev) =>
-        prev.map((el, i) => (i === index ? { ...el, src: url } : el)),
-      );
-    }
   }
 
   function commitDraftText() {
@@ -400,8 +435,66 @@ export default function BuilderScreen() {
     }
   }
 
+  function updateElementAt(index, patch) {
+    setElements((prev) =>
+      prev.map((element, i) => {
+        if (i !== index) return element;
+        return normalizeElementToCanvas({ ...element, ...patch }, canvasSize);
+      }),
+    );
+  }
+
+  function updateSelectedElement(patch) {
+    if (activeIndex === null) return;
+    updateElementAt(activeIndex, patch);
+  }
+
+  function updateSelectedNumeric(field, value) {
+    if (activeIndex === null) return;
+
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return;
+
+    updateSelectedElement({ [field]: parsed });
+  }
+
+  function deleteSelectedElement() {
+    if (activeIndex === null) return;
+    setElements((prev) => prev.filter((_, index) => index !== activeIndex));
+    setActiveIndex(null);
+    setEditingIndex(null);
+  }
+
+  const selectedElement = activeIndex !== null ? elements[activeIndex] : null;
+
   return (
     <main className="builder-screen">
+      {selectedElement && (
+        <EditPanel
+          element={selectedElement}
+          onTextChange={(text) => {
+            updateSelectedElement({ text });
+            if (editingIndex === activeIndex) {
+              setDraftText(text);
+            }
+          }}
+          onFontSizeChange={(fontSize) => updateSelectedNumeric("fontSize", fontSize)}
+          onTextColorChange={(color) => updateSelectedElement({ color })}
+          onImageUrlChange={(src) => updateSelectedElement({ src })}
+          onContainerBgChange={(backgroundColor) =>
+            updateSelectedElement({ backgroundColor })
+          }
+          onContainerRadiusChange={(borderRadius) =>
+            updateSelectedNumeric("borderRadius", borderRadius)
+          }
+          onWidthChange={(width) => updateSelectedNumeric("width", width)}
+          onHeightChange={(height) => updateSelectedNumeric("height", height)}
+          onXChange={(x) => updateSelectedNumeric("x", x)}
+          onYChange={(y) => updateSelectedNumeric("y", y)}
+          onDelete={deleteSelectedElement}
+        />
+      )}
+
       <section className="builder-left">
         <div className="builder-screen__header">
           <div>
