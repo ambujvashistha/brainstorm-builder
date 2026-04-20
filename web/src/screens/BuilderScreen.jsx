@@ -7,6 +7,25 @@ const MIN_CARD_HEIGHT = 44;
 const MIN_CANVAS_WIDTH = 420;
 const MIN_CANVAS_HEIGHT = 320;
 
+function normalizeElementToCanvas(element, canvas) {
+  const maxWidth = Math.max(MIN_CARD_WIDTH, canvas.width - element.x);
+  const maxHeight = Math.max(MIN_CARD_HEIGHT, canvas.height - element.y);
+  const width = Math.max(MIN_CARD_WIDTH, Math.min(element.width, maxWidth));
+  const height = Math.max(MIN_CARD_HEIGHT, Math.min(element.height, maxHeight));
+
+  return {
+    ...element,
+    width,
+    height,
+    x: Math.max(0, Math.min(element.x, canvas.width - width)),
+    y: Math.max(0, Math.min(element.y, canvas.height - height)),
+  };
+}
+
+function normalizeElements(elements, canvas) {
+  return elements.map((element) => normalizeElementToCanvas(element, canvas));
+}
+
 export default function BuilderScreen() {
   const canvasRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(null);
@@ -118,10 +137,13 @@ export default function BuilderScreen() {
           interaction.startSize.height +
           (event.clientY - interaction.startPointer.y);
 
-        setCanvasSize({
+        const nextCanvas = {
           width: Math.max(MIN_CANVAS_WIDTH, nextWidth),
           height: Math.max(MIN_CANVAS_HEIGHT, nextHeight),
-        });
+        };
+
+        setCanvasSize(nextCanvas);
+        setElements((prev) => normalizeElements(prev, nextCanvas));
       }
     };
 
@@ -137,23 +159,6 @@ export default function BuilderScreen() {
   }, [interaction]);
 
   useEffect(() => {
-    setElements((prev) =>
-      prev.map((element) => {
-        const width = Math.min(element.width, canvasSize.width - element.x);
-        const height = Math.min(element.height, canvasSize.height - element.y);
-
-        return {
-          ...element,
-          width: Math.max(MIN_CARD_WIDTH, width),
-          height: Math.max(MIN_CARD_HEIGHT, height),
-          x: Math.min(element.x, Math.max(0, canvasSize.width - width)),
-          y: Math.min(element.y, Math.max(0, canvasSize.height - height)),
-        };
-      }),
-    );
-  }, [canvasSize]);
-
-  useEffect(() => {
     const handleKeyDown = (e) => {
       if (activeIndex === null) return;
 
@@ -166,17 +171,16 @@ export default function BuilderScreen() {
       if ((e.ctrlKey || e.metaKey) && e.key === "d") {
         e.preventDefault();
 
-        if (activeIndex === null) return;
-
-        const element = elements[activeIndex];
-
         setElements((prev) => [
           ...prev,
-          {
-            ...element,
-            x: element.x + 20,
-            y: element.y + 20,
-          },
+          normalizeElementToCanvas(
+            {
+              ...prev[activeIndex],
+              x: prev[activeIndex].x + 20,
+              y: prev[activeIndex].y + 20,
+            },
+            canvasSize,
+          ),
         ]);
       }
 
@@ -192,10 +196,18 @@ export default function BuilderScreen() {
             prev.map((el, i) => {
               if (i !== activeIndex) return el;
 
-              if (e.key === "ArrowUp") return { ...el, y: el.y - move };
-              if (e.key === "ArrowDown") return { ...el, y: el.y + move };
-              if (e.key === "ArrowLeft") return { ...el, x: el.x - move };
-              if (e.key === "ArrowRight") return { ...el, x: el.x + move };
+              if (e.key === "ArrowUp") {
+                return normalizeElementToCanvas({ ...el, y: el.y - move }, canvasSize);
+              }
+              if (e.key === "ArrowDown") {
+                return normalizeElementToCanvas({ ...el, y: el.y + move }, canvasSize);
+              }
+              if (e.key === "ArrowLeft") {
+                return normalizeElementToCanvas({ ...el, x: el.x - move }, canvasSize);
+              }
+              if (e.key === "ArrowRight") {
+                return normalizeElementToCanvas({ ...el, x: el.x + move }, canvasSize);
+              }
 
               return el;
             }),
@@ -206,14 +218,13 @@ export default function BuilderScreen() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex]);
+  }, [activeIndex, canvasSize]);
 
   function addText() {
     const nextIndex = elements.length;
     const nextText = `Text ${nextIndex + 1}`;
 
-    setElements((prev) => [
-      ...prev,
+    const nextElement = normalizeElementToCanvas(
       {
         type: "text",
         x: 56 + nextIndex * 18,
@@ -222,6 +233,12 @@ export default function BuilderScreen() {
         height: 52,
         text: nextText,
       },
+      canvasSize,
+    );
+
+    setElements((prev) => [
+      ...prev,
+      nextElement,
     ]);
 
     setActiveIndex(nextIndex);
@@ -232,8 +249,7 @@ export default function BuilderScreen() {
   function addImage() {
     const nextIndex = elements.length;
 
-    setElements((prev) => [
-      ...prev,
+    const nextElement = normalizeElementToCanvas(
       {
         type: "image",
         x: 100,
@@ -242,6 +258,12 @@ export default function BuilderScreen() {
         height: 140,
         src: "https://via.placeholder.com/300x200",
       },
+      canvasSize,
+    );
+
+    setElements((prev) => [
+      ...prev,
+      nextElement,
     ]);
 
     setActiveIndex(nextIndex);
@@ -250,8 +272,7 @@ export default function BuilderScreen() {
   function addContainer() {
     const nextIndex = elements.length;
 
-    setElements((prev) => [
-      ...prev,
+    const nextElement = normalizeElementToCanvas(
       {
         type: "container",
         x: 120,
@@ -259,6 +280,12 @@ export default function BuilderScreen() {
         width: 240,
         height: 160,
       },
+      canvasSize,
+    );
+
+    setElements((prev) => [
+      ...prev,
+      nextElement,
     ]);
 
     setActiveIndex(nextIndex);
@@ -375,31 +402,24 @@ export default function BuilderScreen() {
 
   return (
     <main className="builder-screen">
-      <div className="builder-left">
+      <section className="builder-left">
         <div className="builder-screen__header">
           <div>
             <h1>Brainstorm Builder</h1>
             <p>A small editor for arranging and resizing idea blocks.</p>
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className="builder-screen__button" onClick={addText}>
-              Add Text
-            </button>
-
-            <button className="builder-screen__button" onClick={addImage}>
-              Add Image
-            </button>
-
-            <button className="builder-screen__button" onClick={addContainer}>
-              Add Container
-            </button>
-
-            <button className="builder-screen__button" onClick={exportJSON}>
+          <div className="builder-screen__actions">
+            <button
+              className="builder-screen__button builder-screen__button--secondary"
+              onClick={exportJSON}
+            >
               Export JSON
             </button>
-
-            <button className="builder-screen__button" onClick={importJSON}>
+            <button
+              className="builder-screen__button builder-screen__button--secondary"
+              onClick={importJSON}
+            >
               Load JSON
             </button>
           </div>
@@ -420,22 +440,41 @@ export default function BuilderScreen() {
           onElementDoubleClick={startEditing}
           onDraftTextChange={setDraftText}
           onDraftTextCommit={commitDraftText}
-          onDraftTextCancel={cancelEditing}
           onDraftTextKeyDown={handleDraftKeyDown}
+          toolbar={
+            <>
+              <button className="canvas-toolbar__button canvas-toolbar__button--primary" onClick={addText}>
+                Add Text
+              </button>
+              <button className="canvas-toolbar__button canvas-toolbar__button--secondary" onClick={addImage}>
+                Add Image
+              </button>
+              <button className="canvas-toolbar__button canvas-toolbar__button--secondary" onClick={addContainer}>
+                Add Container
+              </button>
+            </>
+          }
         />
-      </div>
+      </section>
 
-      <div className="builder-right">
+      <aside className="builder-right">
         <JsonPanel
           elements={elements}
           canvasSize={canvasSize}
           onImport={(data) => {
-            if (data.canvas) setCanvasSize(data.canvas);
-            if (data.elements) setElements(data.elements);
+            const nextCanvas = data.canvas
+              ? {
+                  width: Math.max(MIN_CANVAS_WIDTH, Number(data.canvas.width) || MIN_CANVAS_WIDTH),
+                  height: Math.max(MIN_CANVAS_HEIGHT, Number(data.canvas.height) || MIN_CANVAS_HEIGHT),
+                }
+              : canvasSize;
+
+            if (data.canvas) setCanvasSize(nextCanvas);
+            if (data.elements) setElements(normalizeElements(data.elements, nextCanvas));
             setActiveIndex(null);
           }}
         />
-      </div>
+      </aside>
     </main>
   );
 }

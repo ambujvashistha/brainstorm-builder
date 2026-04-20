@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 export default function JsonPanel({ elements, canvasSize, onImport }) {
-  const [jsonText, setJsonText] = useState("");
-
-  useEffect(() => {
-    const payload = {
-      canvas: canvasSize,
-      elements,
-    };
-
-    setJsonText(JSON.stringify(payload, null, 2));
+  const jsonText = useMemo(() => {
+    return JSON.stringify(
+      {
+        canvas: canvasSize,
+        elements,
+      },
+      null,
+      2,
+    );
   }, [elements, canvasSize]);
 
   function handleCopy() {
@@ -48,22 +48,25 @@ export default function JsonPanel({ elements, canvasSize, onImport }) {
 
   return (
     <aside className="json-panel">
-      <div className="json-panel__header">Layout JSON</div>
+      <div className="json-panel__header">
+        <p className="json-panel__eyebrow">Data</p>
+        <h2>Layout JSON</h2>
+      </div>
 
       <textarea
         className="json-panel__textarea"
         value={jsonText}
-        onChange={(e) => setJsonText(e.target.value)}
+        readOnly
       />
 
       <div className="json-panel__actions">
-        <button className="builder-screen__button" onClick={handleCopy}>
+        <button className="builder-screen__button builder-screen__button--secondary" onClick={handleCopy}>
           Copy
         </button>
-        <button className="builder-screen__button" onClick={handleDownload}>
+        <button className="builder-screen__button builder-screen__button--secondary" onClick={handleDownload}>
           Download
         </button>
-        <label className="builder-screen__button">
+        <label className="builder-screen__button builder-screen__button--secondary json-panel__upload">
           Load File
           <input
             type="file"
