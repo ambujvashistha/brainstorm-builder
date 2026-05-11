@@ -1,157 +1,129 @@
+import TextElement from "../elements/TextElement";
+import ImageElement from "../elements/ImageElement";
+import ContainerElement from "../elements/ContainerElement";
+import ButtonElement from "../elements/ButtonElement";
+import { ELEMENT_TYPES } from "../registry/elementRegistry";
+
+const ELEMENT_COMPONENTS = {
+  [ELEMENT_TYPES.TEXT]: TextElement,
+  [ELEMENT_TYPES.IMAGE]: ImageElement,
+  [ELEMENT_TYPES.CONTAINER]: ContainerElement,
+  [ELEMENT_TYPES.SAFE_AREA]: ContainerElement,
+  [ELEMENT_TYPES.SCROLL_VIEW]: ContainerElement,
+  [ELEMENT_TYPES.TEXT_INPUT]: TextElement,
+  [ELEMENT_TYPES.BUTTON]: ButtonElement,
+  [ELEMENT_TYPES.CARD]: ContainerElement,
+  [ELEMENT_TYPES.ROW]: ContainerElement,
+  [ELEMENT_TYPES.COLUMN]: ContainerElement,
+};
+
 export default function Canvas({
   canvasRef,
-  canvasSize,
   elements,
-  activeIndex,
-  editingIndex,
+  activeId,
+  editingId,
   draftText,
   interaction,
+  hoveredContainerId,
   onCanvasPointerDown,
   onElementPointerDown,
   onElementResizePointerDown,
-  onCanvasResizePointerDown,
   onElementDoubleClick,
   onDraftTextChange,
   onDraftTextCommit,
   onDraftTextKeyDown,
   isPreviewMode,
-  toolbar,
 }) {
-  return (
-    <section className="builder">
-      {!isPreviewMode && (
-        <div className="builder__meta">
-          <span>
-            Canvas: {Math.round(canvasSize.width)} x{" "}
-            {Math.round(canvasSize.height)}
-          </span>
-          <span>Drag cards and use the corners to resize</span>
-        </div>
-      )}
+  const draggingElement = interaction?.type === "drag-element" ? elements.find(el => el.id === interaction.id) : null;
 
+  const renderElement = (element, forceRoot = false) => {
+    const isDraggingActual = interaction?.type === "drag-element" && interaction.id === element.id;
+    
+    // If it's the element being dragged, don't render it in its original place
+    if (isDraggingActual && !forceRoot) return null;
+
+    const isActive = element.id === activeId;
+    const isEditing = element.id === editingId;
+    const isResizing = interaction?.type === "resize-element" && interaction.id === element.id;
+    const isHovered = hoveredContainerId === element.id;
+
+    const ElementComponent = ELEMENT_COMPONENTS[element.type];
+    const children = elements.filter((el) => el.parentId === element.id);
+
+    const parent = elements.find(el => el.id === element.parentId);
+    const isFlowParent = parent && (parent.type === "row" || parent.type === "column");
+    const isAbsolute = !element.parentId || forceRoot || !isFlowParent;
+
+    const style = {
+      ...(isAbsolute ? { position: "absolute", left: element.x, top: element.y } : { position: "relative" }),
+      width: element.width,
+      height: element.height,
+      zIndex: isActive || forceRoot ? 100 : 1,
+      opacity: isDraggingActual ? 0.6 : 1,
+      pointerEvents: isPreviewMode && element.type !== ELEMENT_TYPES.BUTTON ? "none" : (isDraggingActual && !forceRoot ? "none" : "auto"),
+    };
+
+    return (
       <div
-        ref={canvasRef}
-        className={`canvas ${interaction ? "canvas--active" : ""} ${
-          isPreviewMode ? "canvas--preview" : ""
-        }`}
-        style={{
-          width: "100%",
-          height: isPreviewMode ? "100%" : canvasSize.height,
-          position: "relative",
-          background: isPreviewMode ? "#fff" : undefined,
+        key={element.id}
+        data-id={element.id}
+        data-type={element.type}
+        className={`canvas-item ${isActive ? "canvas-item--selected" : ""} ${isDraggingActual ? "is-dragging" : ""} ${isResizing ? "is-resizing" : ""} ${isHovered ? "element-container--hovered" : ""}`}
+        style={style}
+        onPointerDown={(event) => {
+          if (isPreviewMode) return;
+          event.stopPropagation();
+          onElementPointerDown(event, element.id);
         }}
-        onPointerDown={isPreviewMode ? undefined : onCanvasPointerDown}
+        onDoubleClick={(event) => {
+          if (isPreviewMode) return;
+          event.stopPropagation();
+          onElementDoubleClick(element.id);
+        }}
       >
-        {elements.map((element, index) => {
-          const isActive = index === activeIndex;
-          const isEditing = index === editingIndex;
-          const isDragging =
-            interaction?.type === "drag-element" && interaction.index === index;
-
-          const isResizing =
-            interaction?.type === "resize-element" &&
-            interaction.index === index;
-
-          const itemStyle =
-            isPreviewMode && element.type === "text"
-              ? {
-                  left: element.x,
-                  top: element.y,
-                  minWidth: 80,
-                  width: "fit-content",
-                  height: "auto",
-                  padding: "10px 16px",
-                  whiteSpace: "nowrap",
-                }
-              : {
-                  left: element.x,
-                  top: element.y,
-                  width: element.width,
-                  height: element.height,
-                };
-
-          return (
-            <div
-              key={index}
-              data-id={index}
-              className={[
-                "canvas__item",
-                !isPreviewMode && isActive ? "canvas__item--selected" : "",
-                isDragging ? "canvas__item--dragging" : "",
-                isResizing ? "canvas__item--resizing" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              style={itemStyle}
-              onPointerDown={
-                isPreviewMode ? undefined : (event) => onElementPointerDown(event, index)
-              }
-              onDoubleClick={isPreviewMode ? undefined : () => onElementDoubleClick(index)}
-            >
-              {element.type === "text" &&
-                (isEditing ? (
-                  <input
-                    className="canvas__input"
-                    value={draftText}
-                    autoFocus
-                    onChange={(event) => onDraftTextChange(event.target.value)}
-                    onBlur={onDraftTextCommit}
-                    onKeyDown={onDraftTextKeyDown}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    style={{
-                      fontSize: element.fontSize || 16,
-                      color: element.color || "#191c1d",
-                    }}
-                  />
-                ) : (
-                  <span
-                    className="canvas__label"
-                    style={{
-                      fontSize: element.fontSize || 16,
-                      color: element.color || "#191c1d",
-                    }}
-                  >
-                    {element.text}
-                  </span>
-                ))}
-
-              {element.type === "image" && (
-                <img src={element.src} className="canvas__image" draggable={false} />
-              )}
-
-              {element.type === "container" && (
-                <div
-                  className="canvas__container"
-                  style={{
-                    backgroundColor: element.backgroundColor || "#e7e8e9",
-                    borderRadius: element.borderRadius || 12,
-                  }}
-                />
-              )}
-
-              {!isPreviewMode && (
-                <button
-                  type="button"
-                  className="canvas__resize-handle"
-                  onPointerDown={(event) =>
-                    onElementResizePointerDown(event, index)
-                  }
-                />
-              )}
-            </div>
-          );
-        })}
-
-        {!isPreviewMode && (
-          <button
-            type="button"
-            className="canvas__corner-resize"
-            onPointerDown={onCanvasResizePointerDown}
-          />
+        {ElementComponent && (
+          <ElementComponent
+            element={element}
+            isEditing={isEditing}
+            draftText={draftText}
+            onDraftTextChange={onDraftTextChange}
+            onDraftTextCommit={onDraftTextCommit}
+            onDraftTextKeyDown={onDraftTextKeyDown}
+          >
+            {children.map(child => renderElement(child))}
+          </ElementComponent>
         )}
 
-        {!isPreviewMode && <div className="canvas-toolbar">{toolbar}</div>}
+        {!isPreviewMode && isActive && (
+          <div
+            className="resize-handle"
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              onElementResizePointerDown(event, element.id);
+            }}
+          />
+        )}
       </div>
-    </section>
+    );
+  };
+
+  const rootElements = elements.filter((el) => !el.parentId);
+
+  return (
+    <div
+      ref={canvasRef}
+      className="canvas-root"
+      style={{
+        flex: 1,
+        width: "100%",
+        position: "relative",
+        background: "#fff",
+        overflow: "hidden",
+      }}
+      onPointerDown={onCanvasPointerDown}
+    >
+      {rootElements.map((el) => renderElement(el))}
+      {draggingElement && renderElement(draggingElement, true)}
+    </div>
   );
 }
