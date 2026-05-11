@@ -1,73 +1,113 @@
 import { ELEMENT_TYPES } from "../registry/elementRegistry";
 
-export function exportToReactNative(elements, canvasSize) {
+export function exportToReactNative(elements) {
   const styles = {};
-  
-  const components = elements.map((el) => {
-    const styleName = `el_${el.id.replace(/-/g, "_")}`;
+
+  const mapTypeToComponent = (type) => {
+    switch (type) {
+      case ELEMENT_TYPES.TEXT: return "Text";
+      case ELEMENT_TYPES.IMAGE: return "Image";
+      case ELEMENT_TYPES.BUTTON: return "TouchableOpacity";
+      case ELEMENT_TYPES.SAFE_AREA: return "SafeAreaView";
+      case ELEMENT_TYPES.SCROLL_VIEW: return "ScrollView";
+      case ELEMENT_TYPES.TEXT_INPUT: return "TextInput";
+      default: return "View";
+    }
+  };
+
+  const getStyleForElement = (el) => {
+    const s = {};
+    if (!el.parentId) {
+      s.position = "absolute";
+      s.left = el.x;
+      s.top = el.y;
+    }
+
+    if (el.width && el.width !== "100%") s.width = el.width;
+    if (el.height && el.height !== "100%") s.height = el.height;
+    if (el.width === "100%") s.alignSelf = "stretch";
+
+    // Flex
+    if (el.flexDirection) s.flexDirection = el.flexDirection;
+    if (el.justifyContent) s.justifyContent = el.justifyContent;
+    if (el.alignItems) s.alignItems = el.alignItems;
+    if (el.gap) s.gap = el.gap;
+    if (el.padding) s.padding = el.padding;
+    if (el.flex) s.flex = el.flex;
+
+    // Decoration
+    if (el.backgroundColor) s.backgroundColor = el.backgroundColor;
+    if (el.borderRadius) s.borderRadius = el.borderRadius;
+    if (el.shadow) s.shadowColor = "#000", s.shadowOffset = { width: 0, height: 2 }, s.shadowOpacity = 0.1, s.shadowRadius = 4;
+
+    // Typography
+    if (el.fontSize) s.fontSize = el.fontSize;
+    if (el.fontWeight) s.fontWeight = el.fontWeight;
+    if (el.color) s.color = el.color;
+    if (el.textAlign) s.textAlign = el.textAlign;
+    if (el.lineHeight) s.lineHeight = el.lineHeight * (el.fontSize || 16);
+
+    return s;
+  };
+
+  const renderRecursive = (parentId, depth = 1) => {
+    const indent = "  ".repeat(depth);
+    const children = elements.filter(el => el.parentId === parentId);
     
-    styles[styleName] = {
-      position: "absolute",
-      left: el.x,
-      top: el.y,
-      width: el.width,
-      height: el.height,
-    };
+    return children.map(el => {
+      const componentName = mapTypeToComponent(el.type);
+      const styleName = `el_${el.id.replace(/-/g, "_")}`;
+      styles[styleName] = getStyleForElement(el);
 
-    if (el.type === ELEMENT_TYPES.TEXT) {
-      styles[styleName].fontSize = el.fontSize || 16;
-      styles[styleName].color = el.color || "#191c1d";
-      return `      <Text style={styles.${styleName}}>${el.text}</Text>`;
-    }
+      const hasChildren = elements.some(child => child.parentId === el.id);
+      const props = [`style={styles.${styleName}}`];
 
-    if (el.type === ELEMENT_TYPES.IMAGE) {
-      return `      <Image source={{ uri: '${el.src}' }} style={styles.${styleName}} />`;
-    }
+      if (el.type === ELEMENT_TYPES.IMAGE) {
+        props.push(`source={{ uri: '${el.src}' }}`);
+        return `${indent}<${componentName} ${props.join(" ")} />`;
+      }
 
-    if (el.type === ELEMENT_TYPES.CONTAINER) {
-      styles[styleName].backgroundColor = el.backgroundColor || "#e7e8e9";
-      styles[styleName].borderRadius = el.borderRadius || 12;
-      return `      <View style={styles.${styleName}} />`;
-    }
+      if (el.type === ELEMENT_TYPES.TEXT_INPUT) {
+        props.push(`placeholder="${el.placeholder || ''}"`);
+        return `${indent}<${componentName} ${props.join(" ")} />`;
+      }
 
-    if (el.type === ELEMENT_TYPES.BUTTON) {
-      styles[styleName].backgroundColor = el.backgroundColor || "#3b82f6";
-      styles[styleName].borderRadius = el.borderRadius || 8;
-      styles[styleName].alignItems = "center";
-      styles[styleName].justifyContent = "center";
-      
-      const textStyleName = `${styleName}_text`;
-      styles[textStyleName] = {
-        color: el.color || "#ffffff",
-        fontSize: el.fontSize || 14,
-        fontWeight: "600",
-      };
+      const content = el.text || "";
+      if (hasChildren) {
+        return `${indent}<${componentName} ${props.join(" ")}>\n${renderRecursive(el.id, depth + 1).join("\n")}\n${indent}</${componentName}>`;
+      } else if (content) {
+        return `${indent}<${componentName} ${props.join(" ")}>${content}</${componentName}>`;
+      } else {
+        return `${indent}<${componentName} ${props.join(" ")} />`;
+      }
+    });
+  };
 
-      return `      <TouchableOpacity style={styles.${styleName}}>
-        <Text style={styles.${textStyleName}}>${el.text}</Text>
-      </TouchableOpacity>`;
-    }
-
-    return "";
-  }).filter(Boolean).join("\n");
+  const componentsJSX = renderRecursive(null).join("\n");
 
   const code = `
 import React from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, SafeAreaView } from 'react-native';
+import { 
+  StyleSheet, 
+  View, 
+  Text, 
+  Image, 
+  TouchableOpacity, 
+  SafeAreaView, 
+  ScrollView, 
+  TextInput 
+} from 'react-native';
 
-export default function GeneratedApp() {
+export default function App() {
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.canvas}>
-${components}
-      </View>
-    </SafeAreaView>
+    <View style={styles.screen}>
+${componentsJSX}
+    </View>
   );
 }
 
 const styles = StyleSheet.create(${JSON.stringify({
-    container: { flex: 1, backgroundColor: '#fff' },
-    canvas: { width: canvasSize.width, height: canvasSize.height, position: 'relative' },
+    screen: { flex: 1, backgroundColor: '#F5F5F7' },
     ...styles
   }, null, 2)});
 `;

@@ -1,653 +1,300 @@
 import { useEffect, useRef, useState } from "react";
 import Canvas from "../builder/Canvas";
 import EditPanel from "../builder/EditPanel";
-import JsonPanel from "../builder/JsonPanel";
+import PhoneFrame from "../builder/PhoneFrame";
+import { exportToReactNative } from "../utils/exportToReactNative";
+import { useElementActions } from "../hooks/useElementActions";
+import { useCanvasInteractions } from "../hooks/useCanvasInteractions";
+import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
+import { ELEMENT_TYPES, elementRegistry } from "../registry/elementRegistry";
 
-const MIN_CARD_WIDTH = 90;
-const MIN_CARD_HEIGHT = 44;
 const MIN_CANVAS_WIDTH = 420;
 const MIN_CANVAS_HEIGHT = 320;
-
-function normalizeElementToCanvas(element, canvas) {
-  const maxWidth = Math.max(MIN_CARD_WIDTH, canvas.width - element.x);
-  const maxHeight = Math.max(MIN_CARD_HEIGHT, canvas.height - element.y);
-  const width = Math.max(MIN_CARD_WIDTH, Math.min(element.width, maxWidth));
-  const height = Math.max(MIN_CARD_HEIGHT, Math.min(element.height, maxHeight));
-
-  return {
-    ...element,
-    width,
-    height,
-    x: Math.max(0, Math.min(element.x, canvas.width - width)),
-    y: Math.max(0, Math.min(element.y, canvas.height - height)),
-  };
-}
-
-function normalizeElements(elements, canvas) {
-  return elements.map((element) => normalizeElementToCanvas(element, canvas));
-}
 
 export default function BuilderScreen() {
   const canvasRef = useRef(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(null);
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [activeId, setActiveId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
   const [draftText, setDraftText] = useState("");
-  const [canvasSize, setCanvasSize] = useState({ width: 760, height: 480 });
+  const [canvasSize, setCanvasSize] = useState({ width: 375, height: 812 });
   const [interaction, setInteraction] = useState(null);
+  const [rightSidebarTab, setRightSidebarTab] = useState("properties");
+  const [deviceType, setDeviceType] = useState("ios");
+  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
 
   const [elements, setElements] = useState([
     {
-      type: "text",
-      x: 48,
-      y: 48,
-      width: 130,
-      height: 52,
-      text: "Pikachu",
-      fontSize: 16,
-      color: "#191c1d",
+      id: "root-safe-area",
+      type: ELEMENT_TYPES.SAFE_AREA,
+      x: 0,
+      y: 0,
+      width: "100%",
+      height: "100%",
+      parentId: null,
+      backgroundColor: "transparent",
     },
     {
-      type: "text",
-      x: 210,
-      y: 130,
-      width: 140,
-      height: 52,
-      text: "Bulbasaur",
-      fontSize: 16,
-      color: "#191c1d",
+      id: "header-text",
+      type: ELEMENT_TYPES.TEXT,
+      x: 24,
+      y: 60,
+      width: 200,
+      height: 40,
+      text: "Welcome Back",
+      fontSize: 28,
+      fontWeight: "700",
+      color: "#1D1D1F",
+      parentId: null,
     },
   ]);
 
-  function exportJSON() {
-    const payload = {
-      canvas: canvasSize,
-      elements,
-    };
+  const { addElement, updateElement, deleteElement } = useElementActions(
+    elements,
+    setElements,
+    canvasSize,
+    setActiveId,
+    setEditingId,
+    setDraftText
+  );
 
-    const json = JSON.stringify(payload, null, 2);
-    navigator.clipboard.writeText(json);
-    alert("Layout JSON copied to clipboard");
+  function commitDraftText() {
+    if (editingId === null) return;
+    const nextText = draftText.trim() || "Untitled";
+    updateElement(editingId, { text: nextText });
+    setEditingId(null);
   }
 
-  function importJSON() {
-    const input = prompt("Paste layout JSON");
-    if (!input) return;
+  const {
+    handleCanvasPointerDown,
+    handleElementPointerDown,
+    handleElementResizePointerDown,
+    hoveredContainerId,
+  } = useCanvasInteractions({
+    canvasRef,
+    elements,
+    setElements,
+    interaction,
+    setInteraction,
+    isPreviewMode,
+    setActiveId,
+    editingId,
+    commitDraftText,
+  });
 
-    try {
-      const parsed = JSON.parse(input);
+  useKeyboardShortcuts({
+    activeId,
+    setActiveId,
+    setEditingId,
+    elements,
+    setElements,
+    canvasSize,
+    isPreviewMode,
+  });
 
-      if (parsed.canvas) {
-        setCanvasSize(parsed.canvas);
-      }
-
-      if (parsed.elements) {
-        setElements(parsed.elements);
-      }
-
-      setActiveIndex(null);
-    } catch {
-      alert("Invalid JSON");
-    }
+  function exportRN() {
+    const code = exportToReactNative(elements);
+    navigator.clipboard.writeText(code);
+    alert("React Native code copied to clipboard!");
   }
 
   useEffect(() => {
     if (isPreviewMode) return;
-
-    const handlePointerMove = (event) => {
-      if (!interaction || !canvasRef.current) return;
-
-      const canvasRect = canvasRef.current.getBoundingClientRect();
-      const bounds = { width: canvasRect.width, height: canvasRect.height };
-
-      if (interaction.type === "drag-element") {
-        setElements((prev) =>
-          prev.map((element, index) => {
-            if (index !== interaction.index) return element;
-
-            const activeNode = canvasRef.current?.querySelector(
-              `[data-id="${interaction.index}"]`,
-            );
-            const activeRect = activeNode?.getBoundingClientRect();
-            const measuredWidth = activeRect?.width ?? element.width;
-            const measuredHeight = activeRect?.height ?? element.height;
-
-            const nextX =
-              event.clientX - canvasRect.left - interaction.pointerOffset.x;
-
-            const nextY =
-              event.clientY - canvasRect.top - interaction.pointerOffset.y;
-
-            return {
-              ...element,
-              x: Math.max(
-                0,
-                Math.min(
-                  nextX,
-                  bounds.width - measuredWidth,
-                ),
-              ),
-              y: Math.max(
-                0,
-                Math.min(
-                  nextY,
-                  bounds.height - measuredHeight,
-                ),
-              ),
-            };
-          }),
-        );
-      }
-
-      if (interaction.type === "resize-element") {
-        setElements((prev) =>
-          prev.map((element, index) => {
-            if (index !== interaction.index) return element;
-
-            const nextWidth =
-              interaction.startSize.width +
-              (event.clientX - interaction.startPointer.x);
-
-            const nextHeight =
-              interaction.startSize.height +
-              (event.clientY - interaction.startPointer.y);
-
-            return {
-              ...element,
-              width: Math.max(
-                MIN_CARD_WIDTH,
-                Math.min(nextWidth, bounds.width - element.x),
-              ),
-              height: Math.max(
-                MIN_CARD_HEIGHT,
-                Math.min(nextHeight, bounds.height - element.y),
-              ),
-            };
-          }),
-        );
-      }
-
-      if (interaction.type === "resize-canvas") {
-        const nextWidth =
-          interaction.startSize.width +
-          (event.clientX - interaction.startPointer.x);
-
-        const nextHeight =
-          interaction.startSize.height +
-          (event.clientY - interaction.startPointer.y);
-
-        const nextCanvas = {
-          width: Math.max(MIN_CANVAS_WIDTH, nextWidth),
-          height: Math.max(MIN_CANVAS_HEIGHT, nextHeight),
-        };
-
-        setCanvasSize(nextCanvas);
-        setElements((prev) => normalizeElements(prev, nextCanvas));
-      }
-    };
-
-    const handlePointerUp = () => setInteraction(null);
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-    };
-  }, [interaction, isPreviewMode]);
-
-  useEffect(() => {
-    if (isPreviewMode) return;
-
-    const handleKeyDown = (e) => {
-      if (activeIndex === null) return;
-
-      if (e.key === "Delete" || e.key === "Backspace") {
-        setElements((prev) => prev.filter((_, i) => i !== activeIndex));
-        setActiveIndex(null);
-        setEditingIndex(null);
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key === "d") {
-        e.preventDefault();
-
-        setElements((prev) => [
-          ...prev,
-          normalizeElementToCanvas(
-            {
-              ...prev[activeIndex],
-              x: prev[activeIndex].x + 20,
-              y: prev[activeIndex].y + 20,
-            },
-            canvasSize,
-          ),
-        ]);
-      }
-
-      if (activeIndex !== null) {
-        const move = e.shiftKey ? 10 : 1;
-
-        if (
-          ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
-        ) {
-          e.preventDefault();
-
-          setElements((prev) =>
-            prev.map((el, i) => {
-              if (i !== activeIndex) return el;
-
-              if (e.key === "ArrowUp") {
-                return normalizeElementToCanvas({ ...el, y: el.y - move }, canvasSize);
-              }
-              if (e.key === "ArrowDown") {
-                return normalizeElementToCanvas({ ...el, y: el.y + move }, canvasSize);
-              }
-              if (e.key === "ArrowLeft") {
-                return normalizeElementToCanvas({ ...el, x: el.x - move }, canvasSize);
-              }
-              if (e.key === "ArrowRight") {
-                return normalizeElementToCanvas({ ...el, x: el.x + move }, canvasSize);
-              }
-
-              return el;
-            }),
-          );
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, canvasSize, isPreviewMode]);
-
-  useEffect(() => {
-    if (isPreviewMode) return;
-
     const handleOutsidePointerDown = (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-
-      if (
-        target.closest(".canvas__item") ||
-        target.closest(".edit-panel") ||
-        target.closest(".canvas-toolbar")
-      ) {
+      if (target.closest(".canvas-item") || target.closest(".builder-sidebar") || target.closest(".builder-main__topbar")) {
         return;
       }
-
-      setActiveIndex(null);
-      setEditingIndex(null);
+      setActiveId(null);
+      setEditingId(null);
     };
-
     window.addEventListener("pointerdown", handleOutsidePointerDown);
     return () => window.removeEventListener("pointerdown", handleOutsidePointerDown);
   }, [isPreviewMode]);
 
-  useEffect(() => {
-    if (!isPreviewMode) return;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setIsPreviewMode(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isPreviewMode]);
-
-  function addText() {
-    const nextIndex = elements.length;
-    const nextText = `Text ${nextIndex + 1}`;
-
-    const nextElement = normalizeElementToCanvas(
-      {
-        type: "text",
-        x: 56 + nextIndex * 18,
-        y: 56 + nextIndex * 18,
-        width: 150,
-        height: 52,
-        text: nextText,
-        fontSize: 16,
-        color: "#191c1d",
-      },
-      canvasSize,
-    );
-
-    setElements((prev) => [
-      ...prev,
-      nextElement,
-    ]);
-
-    setActiveIndex(nextIndex);
-    setEditingIndex(nextIndex);
-    setDraftText(nextText);
-  }
-
-  function addImage() {
-    const nextIndex = elements.length;
-
-    const nextElement = normalizeElementToCanvas(
-      {
-        type: "image",
-        x: 100,
-        y: 100,
-        width: 200,
-        height: 140,
-        src: "https://via.placeholder.com/300x200",
-      },
-      canvasSize,
-    );
-
-    setElements((prev) => [
-      ...prev,
-      nextElement,
-    ]);
-
-    setActiveIndex(nextIndex);
-  }
-
-  function addContainer() {
-    const nextIndex = elements.length;
-
-    const nextElement = normalizeElementToCanvas(
-      {
-        type: "container",
-        x: 120,
-        y: 120,
-        width: 240,
-        height: 160,
-        backgroundColor: "#e7e8e9",
-        borderRadius: 12,
-      },
-      canvasSize,
-    );
-
-    setElements((prev) => [
-      ...prev,
-      nextElement,
-    ]);
-
-    setActiveIndex(nextIndex);
-  }
-
-  function handleCanvasPointerDown(event) {
+  function startEditing(id) {
     if (isPreviewMode) return;
-
-    if (event.target === event.currentTarget) {
-      commitDraftText();
-      setActiveIndex(null);
-    }
-  }
-
-  function handleElementPointerDown(event, index) {
-    if (isPreviewMode) return;
-    if (!canvasRef.current) return;
-
-    event.preventDefault();
-
-    if (editingIndex !== null && editingIndex !== index) {
-      commitDraftText();
-    }
-
-    const canvasRect = canvasRef.current.getBoundingClientRect();
-    const element = elements[index];
-
-    setActiveIndex(index);
-
-    setInteraction({
-      type: "drag-element",
-      index,
-      pointerOffset: {
-        x: event.clientX - canvasRect.left - element.x,
-        y: event.clientY - canvasRect.top - element.y,
-      },
-    });
-  }
-
-  function handleElementResizePointerDown(event, index) {
-    if (isPreviewMode) return;
-    event.preventDefault();
-    event.stopPropagation();
-
-    const element = elements[index];
-
-    setActiveIndex(index);
-
-    setInteraction({
-      type: "resize-element",
-      index,
-      startPointer: { x: event.clientX, y: event.clientY },
-      startSize: { width: element.width, height: element.height },
-    });
-  }
-
-  function handleCanvasResizePointerDown(event) {
-    if (isPreviewMode) return;
-    event.preventDefault();
-    event.stopPropagation();
-
-    setInteraction({
-      type: "resize-canvas",
-      startPointer: { x: event.clientX, y: event.clientY },
-      startSize: canvasSize,
-    });
-  }
-
-  function startEditing(index) {
-    if (isPreviewMode) return;
-    const element = elements[index];
-
-    if (element.type === "text") {
-      setActiveIndex(index);
-      setEditingIndex(index);
-      setDraftText(element.text);
+    const element = elements.find(el => el.id === id);
+    if (element?.type === ELEMENT_TYPES.TEXT || element?.type === ELEMENT_TYPES.BUTTON) {
+      setActiveId(id);
+      setEditingId(id);
+      setDraftText(element.text || "");
       setInteraction(null);
     }
   }
 
-  function commitDraftText() {
-    if (editingIndex === null) return;
-
-    const nextText = draftText.trim() || "Untitled";
-
-    setElements((prev) =>
-      prev.map((element, index) =>
-        index === editingIndex ? { ...element, text: nextText } : element,
-      ),
-    );
-
-    setEditingIndex(null);
-  }
-
-  function cancelEditing() {
-    setEditingIndex(null);
-    setDraftText("");
-  }
-
-  function handleDraftKeyDown(event) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      commitDraftText();
-    }
-
-    if (event.key === "Escape") {
-      event.preventDefault();
-      cancelEditing();
-    }
-  }
-
-  function updateElementAt(index, patch) {
-    setElements((prev) =>
-      prev.map((element, i) => {
-        if (i !== index) return element;
-        return normalizeElementToCanvas({ ...element, ...patch }, canvasSize);
-      }),
-    );
-  }
-
-  function updateSelectedElement(patch) {
-    if (activeIndex === null) return;
-    updateElementAt(activeIndex, patch);
-  }
-
-  function updateSelectedNumeric(field, value) {
-    if (activeIndex === null) return;
-
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) return;
-
-    updateSelectedElement({ [field]: parsed });
-  }
-
-  function deleteSelectedElement() {
-    if (activeIndex === null) return;
-    setElements((prev) => prev.filter((_, index) => index !== activeIndex));
-    setActiveIndex(null);
-    setEditingIndex(null);
-  }
-
   function togglePreviewMode() {
     setInteraction(null);
-    setEditingIndex(null);
-    setActiveIndex(null);
+    setEditingId(null);
+    setActiveId(null);
     setIsPreviewMode((prev) => !prev);
   }
 
-  const selectedElement = activeIndex !== null ? elements[activeIndex] : null;
+  const selectedElement = activeId !== null ? elements.find(el => el.id === activeId) : null;
 
   const canvasProps = {
     canvasRef,
     canvasSize,
     elements,
-    activeIndex,
-    editingIndex,
+    activeId,
+    editingId,
     draftText,
     interaction,
+    hoveredContainerId,
     onCanvasPointerDown: handleCanvasPointerDown,
     onElementPointerDown: handleElementPointerDown,
     onElementResizePointerDown: handleElementResizePointerDown,
-    onCanvasResizePointerDown: handleCanvasResizePointerDown,
     onElementDoubleClick: startEditing,
     onDraftTextChange: setDraftText,
     onDraftTextCommit: commitDraftText,
-    onDraftTextKeyDown: handleDraftKeyDown,
+    onDraftTextKeyDown: (e) => {
+      if (e.key === "Enter") commitDraftText();
+      if (e.key === "Escape") setEditingId(null);
+    },
     isPreviewMode,
-    toolbar: (
-      <>
-        <button className="canvas-toolbar__button canvas-toolbar__button--primary" onClick={addText}>
-          Add Text
-        </button>
-        <button className="canvas-toolbar__button canvas-toolbar__button--secondary" onClick={addImage}>
-          Add Image
-        </button>
-        <button className="canvas-toolbar__button canvas-toolbar__button--secondary" onClick={addContainer}>
-          Add Container
-        </button>
-      </>
-    ),
   };
 
   return (
-    <main className={`builder-screen ${isPreviewMode ? "builder-screen--preview" : ""}`}>
-      {!isPreviewMode && selectedElement && (
-        <EditPanel
-          element={selectedElement}
-          onTextChange={(text) => {
-            updateSelectedElement({ text });
-            if (editingIndex === activeIndex) {
-              setDraftText(text);
-            }
-          }}
-          onFontSizeChange={(fontSize) => updateSelectedNumeric("fontSize", fontSize)}
-          onTextColorChange={(color) => updateSelectedElement({ color })}
-          onImageUrlChange={(src) => updateSelectedElement({ src })}
-          onContainerBgChange={(backgroundColor) =>
-            updateSelectedElement({ backgroundColor })
-          }
-          onContainerRadiusChange={(borderRadius) =>
-            updateSelectedNumeric("borderRadius", borderRadius)
-          }
-          onWidthChange={(width) => updateSelectedNumeric("width", width)}
-          onHeightChange={(height) => updateSelectedNumeric("height", height)}
-          onXChange={(x) => updateSelectedNumeric("x", x)}
-          onYChange={(y) => updateSelectedNumeric("y", y)}
-          onDelete={deleteSelectedElement}
-        />
+    <main className={`builder-screen ${isPreviewMode ? "is-preview" : ""}`}>
+      {/* Left Sidebar: Components */}
+      {!isPreviewMode && (
+        <aside className={`builder-sidebar ${leftSidebarCollapsed ? "is-collapsed" : ""}`}>
+          <div className="sidebar-header">
+            <h2>Components</h2>
+          </div>
+          <div className="sidebar-content">
+            <div className="component-grid">
+              {Object.entries(elementRegistry).map(([type, config]) => (
+                <button 
+                  key={type} 
+                  className="component-item" 
+                  onClick={() => addElement(type, { parentId: null })}
+                >
+                  <span>{config.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
       )}
 
-      <section className={`builder-left ${isPreviewMode ? "builder-left--preview" : ""}`}>
+      {/* Main Area */}
+      <section className="builder-main">
         {!isPreviewMode && (
-          <div className="builder-screen__header">
-            <div>
-              <h1>Brainstorm Builder</h1>
-              <p>A small editor for arranging and resizing idea blocks.</p>
+          <header className="builder-main__topbar">
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <button 
+                className="btn btn--secondary" 
+                onClick={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
+                style={{ padding: "0 8px" }}
+              >
+                {leftSidebarCollapsed ? "→" : "←"}
+              </button>
+              <h1>Brainstorm</h1>
             </div>
 
-            <div className="builder-screen__actions">
-              <button
-                className="builder-screen__button builder-screen__button--secondary"
-                onClick={exportJSON}
+            <div className="device-switcher">
+              <button 
+                className={`btn ${deviceType === "ios" ? "btn--primary" : "btn--secondary"}`}
+                onClick={() => {
+                  setDeviceType("ios");
+                  setCanvasSize({ width: 375, height: 812 });
+                }}
               >
-                Export JSON
+                iOS
               </button>
-              <button
-                className="builder-screen__button builder-screen__button--secondary"
-                onClick={importJSON}
+              <button 
+                className={`btn ${deviceType === "android" ? "btn--primary" : "btn--secondary"}`}
+                onClick={() => {
+                  setDeviceType("android");
+                  setCanvasSize({ width: 360, height: 740 });
+                }}
               >
-                Load JSON
-              </button>
-              <button
-                className={`builder-screen__button builder-screen__button--toggle ${
-                  isPreviewMode ? "is-active" : ""
-                }`}
-                onClick={togglePreviewMode}
-              >
-                {isPreviewMode ? "Edit" : "Preview"}
+                Android
               </button>
             </div>
-          </div>
+
+            <div className="topbar-actions">
+              <button className="btn btn--secondary" onClick={exportRN}>
+                Export Code
+              </button>
+              <button className="btn btn--primary" onClick={togglePreviewMode}>
+                Preview
+              </button>
+            </div>
+          </header>
         )}
 
-        {isPreviewMode ? (
-          <div className="preview-wrapper">
-            <div className="preview-header">
-              <button
-                className="preview-back-button"
+        <div className="builder-main__content" style={{ background: isPreviewMode ? "#000" : undefined }}>
+          <div className={isPreviewMode ? "preview-container" : ""}>
+            {isPreviewMode && (
+              <button 
+                className="btn btn--secondary" 
                 onClick={togglePreviewMode}
+                style={{ position: "absolute", top: "20px", left: "20px", zIndex: 1000 }}
               >
-                Back
+                Back to Editor
               </button>
-              <h2>Mobile Preview</h2>
-            </div>
-            <div className="phone-frame">
+            )}
+            <PhoneFrame deviceType={deviceType}>
               <Canvas {...canvasProps} />
-            </div>
+            </PhoneFrame>
           </div>
-        ) : (
-          <Canvas {...canvasProps} />
-        )}
+        </div>
       </section>
 
+      {/* Right Sidebar: Controls */}
       {!isPreviewMode && (
-        <aside className="builder-right">
-          <JsonPanel
-            elements={elements}
-            canvasSize={canvasSize}
-            onImport={(data) => {
-              const nextCanvas = data.canvas
-                ? {
-                    width: Math.max(MIN_CANVAS_WIDTH, Number(data.canvas.width) || MIN_CANVAS_WIDTH),
-                    height: Math.max(MIN_CANVAS_HEIGHT, Number(data.canvas.height) || MIN_CANVAS_HEIGHT),
-                  }
-                : canvasSize;
+        <aside className="builder-sidebar builder-sidebar--right">
+          <div className="sidebar-tabs">
+            <button
+              className={`tab-button ${rightSidebarTab === "properties" ? "is-active" : ""}`}
+              onClick={() => setRightSidebarTab("properties")}
+            >
+              Styles
+            </button>
+            <button
+              className={`tab-button ${rightSidebarTab === "code" ? "is-active" : ""}`}
+              onClick={() => setRightSidebarTab("code")}
+            >
+              Code
+            </button>
+            <button
+              className={`tab-button ${rightSidebarTab === "layers" ? "is-active" : ""}`}
+              onClick={() => setRightSidebarTab("layers")}
+            >
+              Layers
+            </button>
+          </div>
 
-              if (data.canvas) setCanvasSize(nextCanvas);
-              if (data.elements) setElements(normalizeElements(data.elements, nextCanvas));
-              setActiveIndex(null);
-            }}
-          />
+          <div className="sidebar-content">
+            {rightSidebarTab === "properties" && (
+              <EditPanel
+                element={selectedElement}
+                onUpdate={(patch) => updateElement(activeId, patch)}
+                onDelete={() => deleteElement(activeId)}
+              />
+            )}
+            {rightSidebarTab === "code" && (
+              <div className="code-preview">
+                {exportToReactNative(elements)}
+              </div>
+            )}
+            {rightSidebarTab === "layers" && (
+              <div className="layers-list">
+                {elements.map(el => (
+                  <div 
+                    key={el.id} 
+                    className={`layer-item ${activeId === el.id ? "is-active" : ""}`}
+                    onClick={() => setActiveId(el.id)}
+                  >
+                    <span>{elementRegistry[el.type]?.label || el.type}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </aside>
       )}
     </main>
