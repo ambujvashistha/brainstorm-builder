@@ -1,0 +1,126 @@
+export const ELEMENT_TYPES = {
+  TEXT: "text",
+  IMAGE: "image",
+  CONTAINER: "container",
+  SAFE_AREA: "safe-area",
+  SCROLL_VIEW: "scroll-view",
+  TEXT_INPUT: "text-input",
+  BUTTON: "button",
+  CARD: "card",
+  ROW: "row",
+  COLUMN: "column",
+};
+
+export const elementRegistry = {
+  [ELEMENT_TYPES.TEXT]: {
+    label: "Text",
+    defaultProps: {
+      text: "New Text",
+      fontSize: 16,
+      color: "#191c1d",
+      fontWeight: "400",
+      lineHeight: 1.5,
+      textAlign: "left",
+      letterSpacing: 0,
+    },
+    defaultSize: { width: 150, height: 40 },
+  },
+  [ELEMENT_TYPES.IMAGE]: {
+    label: "Image",
+    defaultProps: {
+      src: "https://via.placeholder.com/300x200",
+      objectFit: "cover",
+      borderRadius: 0,
+    },
+    defaultSize: { width: 200, height: 140 },
+  },
+  [ELEMENT_TYPES.CONTAINER]: {
+    label: "Box",
+    defaultProps: {
+      backgroundColor: "#ffffff",
+      borderRadius: 0,
+      flexDirection: "column",
+      justifyContent: "flex-start",
+      alignItems: "stretch",
+      gap: 0,
+      padding: 0,
+    },
+    defaultSize: { width: 240, height: 160 },
+  },
+  [ELEMENT_TYPES.SAFE_AREA]: {
+    label: "Safe Area",
+    defaultProps: {
+      flex: 1,
+      backgroundColor: "transparent",
+    },
+    defaultSize: { width: "100%", height: "100%" },
+  },
+  [ELEMENT_TYPES.SCROLL_VIEW]: {
+    label: "Scroll View",
+    defaultProps: {
+      horizontal: false,
+      showsIndicator: true,
+      gap: 0,
+      padding: 0,
+    },
+    defaultSize: { width: "100%", height: 300 },
+  },
+  [ELEMENT_TYPES.TEXT_INPUT]: {
+    label: "Input",
+    defaultProps: {
+      placeholder: "Enter text...",
+      fontSize: 14,
+      color: "#191c1d",
+      backgroundColor: "#f0f0f0",
+      borderRadius: 8,
+      padding: 12,
+    },
+    defaultSize: { width: 200, height: 48 },
+  },
+  [ELEMENT_TYPES.BUTTON]: {
+    label: "Button",
+    defaultProps: {
+      text: "Click Me",
+      backgroundColor: "#007AFF",
+      color: "#ffffff",
+      borderRadius: 12,
+      fontSize: 16,
+      fontWeight: "600",
+      padding: 12,
+    },
+    defaultSize: { width: 140, height: 50 },
+  },
+  [ELEMENT_TYPES.CARD]: {
+    label: "Card",
+    defaultProps: {
+      backgroundColor: "#ffffff",
+      borderRadius: 16,
+      padding: 16,
+      shadow: "0 4px 12px rgba(0,0,0,0.1)",
+      gap: 12,
+    },
+    defaultSize: { width: 280, height: 180 },
+  },
+  [ELEMENT_TYPES.ROW]: {
+    label: "Row",
+    defaultProps: {
+      flexDirection: "row",
+      justifyContent: "flex-start",
+      alignItems: "center",
+      gap: 8,
+      padding: 0,
+    },
+    defaultSize: { width: "100%", height: 60 },
+  },
+  [ELEMENT_TYPES.COLUMN]: {
+    label: "Column",
+    defaultProps: {
+      flexDirection: "column",
+      justifyContent: "flex-start",
+      alignItems: "stretch",
+      gap: 8,
+      padding: 0,
+    },
+    defaultSize: { width: "100%", height: 120 },
+  },
+};
