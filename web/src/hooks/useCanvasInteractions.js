@@ -21,11 +21,11 @@ export function useCanvasInteractions({
   const activePage = pages.find(p => p.id === activePageId);
   const elements = activePage?.elements || [];
 
-  const SNAP_THRESHOLD = 8;
+  const SNAP_THRESHOLD = 10;
 
   const getGridStep = () => ({
-    x: canvasSize.width / (gridConfig?.cols || 12),
-    y: canvasSize.height / (gridConfig?.rows || 20)
+    x: gridConfig?.size || 10,
+    y: gridConfig?.size || 10
   });
 
   const snapToValue = (val, step) => snapToGrid ? Math.round(val / step) * step : val;
@@ -42,13 +42,12 @@ export function useCanvasInteractions({
 
     const step = getGridStep();
 
-    // Snap points for the dragging element: [left, center, right]
+    // Snap points for the dragging element
     const dragPointsX = [
       { val: x, type: 'start' },
       { val: x + width / 2, type: 'center' },
       { val: x + width, type: 'end' }
     ];
-    // [top, center, bottom]
     const dragPointsY = [
       { val: y, type: 'start' },
       { val: y + height / 2, type: 'center' },
@@ -88,7 +87,7 @@ export function useCanvasInteractions({
 
       dragPointsX.forEach(dx => {
         elPointsX.forEach(ex => {
-          if (!foundV && Math.abs(dx.val - ex) < SNAP_THRESHOLD) {
+          if (Math.abs(dx.val - ex) < SNAP_THRESHOLD) {
             snappedX = dx.type === 'start' ? ex : (dx.type === 'center' ? ex - width / 2 : ex - width);
             verticalGuides.push(ex);
             foundV = true;
@@ -98,7 +97,7 @@ export function useCanvasInteractions({
 
       dragPointsY.forEach(dy => {
         elPointsY.forEach(ey => {
-          if (!foundH && Math.abs(dy.val - ey) < SNAP_THRESHOLD) {
+          if (Math.abs(dy.val - ey) < SNAP_THRESHOLD) {
             snappedY = dy.type === 'start' ? ey : (dy.type === 'center' ? ey - height / 2 : ey - height);
             horizontalGuides.push(ey);
             foundH = true;
@@ -107,12 +106,10 @@ export function useCanvasInteractions({
       });
     });
 
-    // 3. Grid Snapping (only if no smart guide found for that axis)
-    if (!foundV && snapToGrid) {
-      snappedX = Math.round(snappedX / step.x) * step.x;
-    }
-    if (!foundH && snapToGrid) {
-      snappedY = Math.round(snappedY / step.y) * step.y;
+    // 3. Grid Snapping
+    if (snapToGrid) {
+      if (!foundV) snappedX = Math.round(snappedX / step.x) * step.x;
+      if (!foundH) snappedY = Math.round(snappedY / step.y) * step.y;
     }
 
     return { 
@@ -192,6 +189,7 @@ export function useCanvasInteractions({
       if (interaction?.type === "drag-element") {
         const canvasRect = canvasRef.current.getBoundingClientRect();
         const element = elements.find(el => el.id === interaction.id);
+        const step = getGridStep();
         
         updateActivePageElements(prev => prev.map(el => {
           if (el.id === interaction.id) {

@@ -9,6 +9,7 @@ export function exportToReactNative(activeElements, pages, navigationConfig) {
       case ELEMENT_TYPES.TEXT: return "Text";
       case ELEMENT_TYPES.IMAGE: return "Image";
       case ELEMENT_TYPES.BUTTON: return "TouchableOpacity";
+      case ELEMENT_TYPES.ICON: return "Ionicons";
       case ELEMENT_TYPES.SAFE_AREA: return "SafeAreaView";
       case ELEMENT_TYPES.SCROLL_VIEW:
       case ELEMENT_TYPES.FLAT_LIST:
@@ -93,6 +94,14 @@ export function exportToReactNative(activeElements, pages, navigationConfig) {
         return `${indent}<${componentName} ${props.join(" ")} />`;
       }
 
+      if (el.type === ELEMENT_TYPES.ICON) {
+        const iconName = (el.iconName || "circle").toLowerCase();
+        props.push(`name="${iconName}"`);
+        props.push(`size={${el.size || 24}}`);
+        props.push(`color="${el.color || '#000'}"`);
+        return `${indent}<${componentName} ${props.join(" ")} />`;
+      }
+
       const content = el.text || "";
       if (el.type === ELEMENT_TYPES.BUTTON) {
         const textStyleKey = `${styleKey}_text`;
@@ -167,6 +176,7 @@ import {
   ScrollView, 
   TextInput 
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 ${navigationConfig?.enabled ? "import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';" : ""}
