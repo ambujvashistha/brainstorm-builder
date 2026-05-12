@@ -22,26 +22,29 @@ export default function PhoneFrame({
         
         <div className="phone-frame__viewport">
           {children}
-        </div>
-
-        {/* Real Global Drawer */}
-        <div className={`phone-frame__drawer-overlay ${isDrawerOpen ? "is-open" : ""}`} onClick={onCloseDrawer}>
-          <div className="phone-frame__drawer-content" onClick={e => e.stopPropagation()}>
-            <div className="drawer-header">
-              <div className="drawer-avatar" />
-              <div className="drawer-name">User Name</div>
-            </div>
-            <div className="drawer-menu">
-              {tabs.map(tab => (
-                <button 
-                  key={`drawer-${tab.id}`} 
-                  className={`drawer-item ${activePageId === tab.targetPageId ? "is-active" : ""}`}
-                  onClick={() => onNavigate && onNavigate(tab.targetPageId)}
-                >
-                  <div className={`drawer-icon drawer-icon--${tab.icon}`} />
-                  <span>{tab.label}</span>
-                </button>
-              ))}
+          
+          {/* Real Global Drawer - Moved INSIDE viewport to stay within phone bounds */}
+          <div className={`phone-frame__drawer-overlay ${isDrawerOpen ? "is-open" : ""}`} onClick={onCloseDrawer}>
+            <div className="phone-frame__drawer-content" onClick={e => e.stopPropagation()}>
+              <div className="drawer-header">
+                <div className="drawer-avatar" />
+                <div className="drawer-name">User Profile</div>
+              </div>
+              <div className="drawer-menu">
+                {tabs.map(tab => (
+                  <button 
+                    key={`drawer-${tab.id}`} 
+                    className={`drawer-item ${activePageId === tab.targetPageId ? "is-active" : ""}`}
+                    onClick={() => onNavigate && onNavigate(tab.targetPageId)}
+                  >
+                    <div className="drawer-icon">
+                      {/* Simple placeholder for icon */}
+                      <div style={{ width: 12, height: 12, borderRadius: 2, background: "currentColor" }} />
+                    </div>
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

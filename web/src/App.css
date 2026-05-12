@@ -715,3 +715,19 @@ body {
   color: var(--primary);
   font-weight: 600;
 }
+
+/* Snapping Guides */
+.snapping-guides div {
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+}
+
+.grid-controls input::-webkit-outer-spin-button,
+.grid-controls input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.grid-controls input[type=number] {
+  -moz-appearance: textfield;
+}

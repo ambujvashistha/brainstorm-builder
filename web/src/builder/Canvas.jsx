@@ -166,6 +166,18 @@ export default function Canvas({
     >
       {rootElements.map((el) => renderElement(el))}
       {draggingElement && renderElement(draggingElement, true)}
+
+      {/* Smart Snapping Guides */}
+      {!isPreviewMode && interaction && (
+        <div className="snapping-guides" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1000 }}>
+          {interaction.guides?.vertical.map((x, i) => (
+            <div key={`v-${i}`} style={{ position: "absolute", left: x, top: 0, bottom: 0, width: "1px", backgroundColor: "#ff00ff", boxShadow: "0 0 4px rgba(255,0,255,0.5)" }} />
+          ))}
+          {interaction.guides?.horizontal.map((y, i) => (
+            <div key={`h-${i}`} style={{ position: "absolute", top: y, left: 0, right: 0, height: "1px", backgroundColor: "#ff00ff", boxShadow: "0 0 4px rgba(255,0,255,0.5)" }} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

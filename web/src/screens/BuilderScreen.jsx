@@ -129,6 +129,7 @@ export default function BuilderScreen() {
     handleElementPointerDown,
     handleElementResizePointerDown,
     hoveredContainerId,
+    guides,
   } = useCanvasInteractions({
     canvasRef,
     pages,
@@ -208,7 +209,7 @@ export default function BuilderScreen() {
     activeId,
     editingId,
     draftText,
-    interaction,
+    interaction: interaction ? { ...interaction, guides } : null,
     hoveredContainerId,
     onCanvasPointerDown: handleCanvasPointerDown,
     onElementPointerDown: handleElementPointerDown,
@@ -368,6 +369,27 @@ export default function BuilderScreen() {
               >
                 Snap
               </button>
+            </div>
+
+            <div className="grid-controls" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)" }}>GRID:</span>
+              <div style={{ display: "flex", background: "#F5F5F7", padding: "2px", borderRadius: "6px", border: "1px solid var(--border-color)" }}>
+                <input 
+                  type="number" 
+                  value={gridConfig.cols} 
+                  onChange={(e) => setGridConfig(prev => ({ ...prev, cols: Math.max(1, parseInt(e.target.value) || 1) }))}
+                  style={{ width: "36px", height: "24px", border: "none", background: "transparent", fontSize: "11px", textAlign: "center", outline: "none" }}
+                  title="Columns"
+                />
+                <span style={{ fontSize: "11px", color: "var(--text-secondary)", alignSelf: "center" }}>×</span>
+                <input 
+                  type="number" 
+                  value={gridConfig.rows} 
+                  onChange={(e) => setGridConfig(prev => ({ ...prev, rows: Math.max(1, parseInt(e.target.value) || 1) }))}
+                  style={{ width: "36px", height: "24px", border: "none", background: "transparent", fontSize: "11px", textAlign: "center", outline: "none" }}
+                  title="Rows"
+                />
+              </div>
             </div>
 
             <div className="topbar-actions">

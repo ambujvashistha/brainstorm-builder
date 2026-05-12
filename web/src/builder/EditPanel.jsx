@@ -35,9 +35,63 @@ export default function EditPanel({ element, pages, navigationConfig, onUpdate, 
           </ControlField>
           
           <div style={{ marginTop: "16px" }}>
-            <div className="property-group__title">Tabs</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <div className="property-group__title" style={{ margin: 0 }}>Tabs</div>
+              <button 
+                className="btn btn--secondary" 
+                style={{ height: "24px", padding: "0 8px", fontSize: "10px" }}
+                onClick={() => {
+                  const newTab = { 
+                    id: `tab-${Date.now()}`, 
+                    label: "New Tab", 
+                    icon: "circle", 
+                    targetPageId: pages[0]?.id 
+                  };
+                  updateNavigation({ tabs: [...(navigationConfig.tabs || []), newTab] });
+                }}
+              >
+                + Add Tab
+              </button>
+            </div>
+
             {navigationConfig?.tabs.map((tab, index) => (
-              <div key={tab.id} className="control-field" style={{ border: "1px solid var(--border-color)", padding: "12px", borderRadius: "8px", marginBottom: "8px" }}>
+              <div key={tab.id} className="control-field" style={{ border: "1px solid var(--border-color)", padding: "12px", borderRadius: "8px", marginBottom: "8px", position: "relative" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <div style={{ display: "flex", gap: "4px" }}>
+                    <button 
+                      disabled={index === 0}
+                      onClick={() => {
+                        const nextTabs = [...navigationConfig.tabs];
+                        [nextTabs[index-1], nextTabs[index]] = [nextTabs[index], nextTabs[index-1]];
+                        updateNavigation({ tabs: nextTabs });
+                      }}
+                      style={{ border: "none", background: "none", cursor: index === 0 ? "default" : "pointer", opacity: index === 0 ? 0.3 : 1 }}
+                    >
+                      ↑
+                    </button>
+                    <button 
+                      disabled={index === navigationConfig.tabs.length - 1}
+                      onClick={() => {
+                        const nextTabs = [...navigationConfig.tabs];
+                        [nextTabs[index+1], nextTabs[index]] = [nextTabs[index], nextTabs[index+1]];
+                        updateNavigation({ tabs: nextTabs });
+                      }}
+                      style={{ border: "none", background: "none", cursor: index === navigationConfig.tabs.length - 1 ? "default" : "pointer", opacity: index === navigationConfig.tabs.length - 1 ? 0.3 : 1 }}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const nextTabs = navigationConfig.tabs.filter((_, i) => i !== index);
+                      updateNavigation({ tabs: nextTabs });
+                    }}
+                    style={{ border: "none", background: "none", cursor: "pointer", color: "#FF3B30", fontSize: "14px" }}
+                  >
+                    ×
+                  </button>
+                </div>
+
                 <ControlField label="Label">
                   <input 
                     className="input-control" 
