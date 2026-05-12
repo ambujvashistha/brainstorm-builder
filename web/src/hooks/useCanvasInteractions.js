@@ -2,22 +2,44 @@ import { useEffect, useState } from "react";
 
 export function useCanvasInteractions({
   canvasRef,
-  elements,
-  setElements,
+  pages,
+  setPages,
+  activePageId,
   interaction,
   setInteraction,
   isPreviewMode,
   setActiveId,
   editingId,
   commitDraftText,
+  snapToGrid,
+  gridConfig,
+  canvasSize,
+  onToggleDrawer,
 }) {
   const [hoveredContainerId, setHoveredContainerId] = useState(null);
+  const activePage = pages.find(p => p.id === activePageId);
+  const elements = activePage?.elements || [];
+
+  const getGridStep = () => ({
+    x: canvasSize.width / (gridConfig?.cols || 12),
+    y: canvasSize.height / (gridConfig?.rows || 20)
+  });
+
+  const snap = (val, step) => snapToGrid ? Math.round(val / step) * step : val;
+
+  function updateActivePageElements(updater) {
+    setPages(prev => prev.map(page => {
+      if (page.id !== activePageId) return page;
+      return { ...page, elements: updater(page.elements) };
+    }));
+  }
 
   useEffect(() => {
     if (isPreviewMode) return;
 
     const handlePointerMove = (event) => {
       if (!interaction || !canvasRef.current) return;
+      const step = getGridStep();
 
       if (interaction.type === "drag-element") {
         const canvasRect = canvasRef.current.getBoundingClientRect();
@@ -27,31 +49,30 @@ export function useCanvasInteractions({
         const containerNode = elementsAtPoint.find(node => {
           const type = node.getAttribute("data-type");
           const id = node.getAttribute("data-id");
-          // Remove safe-area from auto-reparenting to keep elements at root by default
-          return ["container", "scroll-view", "card", "row", "column"].includes(type) && id !== interaction.id;
+          return ["container", "scroll-view", "card", "row", "column", "flat-list"].includes(type) && id !== interaction.id;
         });
         
         const newHoveredId = containerNode ? containerNode.getAttribute("data-id") : null;
         setHoveredContainerId(newHoveredId);
 
-        setElements((prev) =>
+        updateActivePageElements((prev) =>
           prev.map((element) => {
             if (element.id !== interaction.id) return element;
 
-            const nextX = event.clientX - canvasRect.left - interaction.pointerOffset.x;
-            const nextY = event.clientY - canvasRect.top - interaction.pointerOffset.y;
+            let nextX = event.clientX - canvasRect.left - interaction.pointerOffset.x;
+            let nextY = event.clientY - canvasRect.top - interaction.pointerOffset.y;
 
             return {
               ...element,
-              x: nextX,
-              y: nextY,
+              x: snap(nextX, step.x),
+              y: snap(nextY, step.y),
             };
           }),
         );
       }
 
       if (interaction.type === "resize-element") {
-        setElements((prev) =>
+        updateActivePageElements((prev) =>
           prev.map((element) => {
             if (element.id !== interaction.id) return element;
 
@@ -60,8 +81,8 @@ export function useCanvasInteractions({
 
             return {
               ...element,
-              width: Math.max(20, nextWidth),
-              height: Math.max(20, nextHeight),
+              width: snap(Math.max(20, nextWidth), step.x),
+              height: snap(Math.max(20, nextHeight), step.y),
             };
           }),
         );
@@ -71,21 +92,15 @@ export function useCanvasInteractions({
     const handlePointerUp = (event) => {
       if (interaction?.type === "drag-element") {
         const canvasRect = canvasRef.current.getBoundingClientRect();
+        const step = getGridStep();
         
-        setElements(prev => prev.map(el => {
+        updateActivePageElements(prev => prev.map(el => {
           if (el.id === interaction.id) {
-            // Use the hovered container detected during move
             const targetParentId = hoveredContainerId !== undefined ? hoveredContainerId : el.parentId;
             
-            // Calculate final x, y
             let finalX = event.clientX - canvasRect.left - interaction.pointerOffset.x;
             let finalY = event.clientY - canvasRect.top - interaction.pointerOffset.y;
 
-            // If dropping into a container, we might want to convert to relative coordinates.
-            // But for now, let's keep it simple: if it's the root or Safe Area (via null), it stays absolute.
-            // If it's a specific container, we might need more logic.
-            // For now, let's just ensure it's absolute if dropped at root.
-            
             if (targetParentId) {
               const parentNode = document.querySelector(`[data-id="${targetParentId}"]`);
               if (parentNode) {
@@ -98,8 +113,8 @@ export function useCanvasInteractions({
             return { 
               ...el, 
               parentId: targetParentId,
-              x: finalX,
-              y: finalY
+              x: snap(finalX, step.x),
+              y: snap(finalY, step.y)
             };
           }
           return el;
@@ -116,7 +131,7 @@ export function useCanvasInteractions({
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [interaction, isPreviewMode, canvasRef, setElements, hoveredContainerId, setInteraction]);
+  }, [interaction, isPreviewMode, canvasRef, setPages, activePageId, hoveredContainerId, setInteraction]);
 
   function handleCanvasPointerDown(event) {
     if (isPreviewMode) return;
@@ -139,11 +154,7 @@ export function useCanvasInteractions({
 
     setActiveId(id);
 
-    // Get current position on screen to calculate correct offset
     const elementRect = event.currentTarget.getBoundingClientRect();
-    const currentX = elementRect.left - canvasRect.left;
-    const currentY = elementRect.top - canvasRect.top;
-
     setInteraction({
       type: "drag-element",
       id,
@@ -153,7 +164,6 @@ export function useCanvasInteractions({
       },
     });
 
-    // Set initial hovered container
     setHoveredContainerId(element.parentId);
   }
 

@@ -5,11 +5,22 @@ export function useKeyboardShortcuts({
   activeId,
   setActiveId,
   setEditingId,
-  elements,
-  setElements,
+  pages,
+  setPages,
+  activePageId,
   canvasSize,
   isPreviewMode,
 }) {
+  const activePage = pages.find(p => p.id === activePageId);
+  const elements = activePage?.elements || [];
+
+  function updateActivePageElements(updater) {
+    setPages(prev => prev.map(page => {
+      if (page.id !== activePageId) return page;
+      return { ...page, elements: updater(page.elements) };
+    }));
+  }
+
   useEffect(() => {
     if (isPreviewMode) return;
 
@@ -22,7 +33,7 @@ export function useKeyboardShortcuts({
       }
 
       if (e.key === "Delete" || e.key === "Backspace") {
-        setElements((prev) => prev.filter((el) => el.id !== activeId));
+        updateActivePageElements((prev) => prev.filter((el) => el.id !== activeId));
         setActiveId(null);
         setEditingId(null);
       }
@@ -34,14 +45,14 @@ export function useKeyboardShortcuts({
         if (!activeElement) return;
 
         const newId = crypto.randomUUID();
-        setElements((prev) => [
+        updateActivePageElements((prev) => [
           ...prev,
           normalizeElementToCanvas(
             {
               ...activeElement,
               id: newId,
-              x: activeElement.x + 20,
-              y: activeElement.y + 20,
+              x: (activeElement.x || 0) + 20,
+              y: (activeElement.y || 0) + 20,
             },
             canvasSize,
           ),
@@ -57,7 +68,7 @@ export function useKeyboardShortcuts({
         ) {
           e.preventDefault();
 
-          setElements((prev) =>
+          updateActivePageElements((prev) =>
             prev.map((el) => {
               if (el.id !== activeId) return el;
 
@@ -83,5 +94,5 @@ export function useKeyboardShortcuts({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeId, canvasSize, elements, isPreviewMode, setElements, setActiveId, setEditingId]);
+  }, [activeId, canvasSize, elements, isPreviewMode, setPages, activePageId, setActiveId, setEditingId]);
 }

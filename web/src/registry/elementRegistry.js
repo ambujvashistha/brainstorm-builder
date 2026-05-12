@@ -9,6 +9,10 @@ export const ELEMENT_TYPES = {
   CARD: "card",
   ROW: "row",
   COLUMN: "column",
+  FLAT_LIST: "flat-list",
+  FLAT_LIST_HORIZONTAL: "flat-list-horizontal",
+  STACK_HEADER: "stack-header",
+  DRAWER: "drawer",
 };
 
 export const elementRegistry = {
@@ -35,7 +39,7 @@ export const elementRegistry = {
     defaultSize: { width: 200, height: 140 },
   },
   [ELEMENT_TYPES.CONTAINER]: {
-    label: "Box",
+    label: "View",
     defaultProps: {
       backgroundColor: "#ffffff",
       borderRadius: 0,
@@ -63,7 +67,7 @@ export const elementRegistry = {
       gap: 0,
       padding: 0,
     },
-    defaultSize: { width: "100%", height: 300 },
+    defaultSize: { width: 300, height: 200 },
   },
   [ELEMENT_TYPES.TEXT_INPUT]: {
     label: "Input",
@@ -108,9 +112,9 @@ export const elementRegistry = {
       justifyContent: "flex-start",
       alignItems: "center",
       gap: 8,
-      padding: 0,
+      padding: 8,
     },
-    defaultSize: { width: "100%", height: 60 },
+    defaultSize: { width: 300, height: 80 },
   },
   [ELEMENT_TYPES.COLUMN]: {
     label: "Column",
@@ -119,8 +123,43 @@ export const elementRegistry = {
       justifyContent: "flex-start",
       alignItems: "stretch",
       gap: 8,
-      padding: 0,
+      padding: 8,
     },
-    defaultSize: { width: "100%", height: 120 },
+    defaultSize: { width: 300, height: 200 },
+  },
+  [ELEMENT_TYPES.FLAT_LIST]: {
+    label: "FlatList",
+    defaultProps: {
+      backgroundColor: "transparent",
+      padding: 8,
+      gap: 12,
+    },
+    defaultSize: { width: 320, height: 240 },
+  },
+  [ELEMENT_TYPES.FLAT_LIST_HORIZONTAL]: {
+    label: "H-FlatList",
+    defaultProps: {
+      backgroundColor: "transparent",
+      padding: 8,
+      gap: 12,
+      horizontal: true,
+    },
+    defaultSize: { width: 320, height: 120 },
+  },
+  [ELEMENT_TYPES.STACK_HEADER]: {
+    label: "Stack Header",
+    defaultProps: {
+      title: "Header Title",
+      backgroundColor: "#ffffff",
+      showBackButton: true,
+    },
+    defaultSize: { width: "100%", height: 56 },
+  },
+  [ELEMENT_TYPES.DRAWER]: {
+    label: "Drawer",
+    defaultProps: {
+      backgroundColor: "#ffffff",
+    },
+    defaultSize: { width: 280, height: "100%" },
   },
 };

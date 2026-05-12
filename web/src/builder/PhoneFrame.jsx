@@ -1,5 +1,14 @@
-export default function PhoneFrame({ children, deviceType = "ios" }) {
+export default function PhoneFrame({ 
+  children, 
+  deviceType = "ios", 
+  navigationConfig, 
+  activePageId, 
+  isDrawerOpen,
+  onCloseDrawer,
+  onNavigate 
+}) {
   const isAndroid = deviceType === "android";
+  const tabs = navigationConfig?.tabs || [];
 
   return (
     <div className="phone-frame" style={{ 
@@ -11,7 +20,46 @@ export default function PhoneFrame({ children, deviceType = "ios" }) {
         {!isAndroid && <div className="phone-frame__notch" />}
         <div className="phone-frame__status-bar" />
         
-        {children}
+        <div className="phone-frame__viewport">
+          {children}
+        </div>
+
+        {/* Real Global Drawer */}
+        <div className={`phone-frame__drawer-overlay ${isDrawerOpen ? "is-open" : ""}`} onClick={onCloseDrawer}>
+          <div className="phone-frame__drawer-content" onClick={e => e.stopPropagation()}>
+            <div className="drawer-header">
+              <div className="drawer-avatar" />
+              <div className="drawer-name">User Name</div>
+            </div>
+            <div className="drawer-menu">
+              {tabs.map(tab => (
+                <button 
+                  key={`drawer-${tab.id}`} 
+                  className={`drawer-item ${activePageId === tab.targetPageId ? "is-active" : ""}`}
+                  onClick={() => onNavigate && onNavigate(tab.targetPageId)}
+                >
+                  <div className={`drawer-icon drawer-icon--${tab.icon}`} />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {navigationConfig?.enabled && (
+          <div className="phone-frame__bottom-tabs">
+            {tabs.map(tab => (
+              <button 
+                key={tab.id}
+                className={`phone-tab-item ${activePageId === tab.targetPageId ? "is-active" : ""}`}
+                onClick={() => onNavigate && onNavigate(tab.targetPageId)}
+              >
+                <div className={`phone-tab-icon phone-tab-icon--${tab.icon}`} />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
         
         {!isAndroid && <div className="phone-frame__home-indicator" />}
       </div>

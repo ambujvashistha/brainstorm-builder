@@ -3,13 +3,61 @@ import Canvas from "../builder/Canvas";
 import EditPanel from "../builder/EditPanel";
 import PhoneFrame from "../builder/PhoneFrame";
 import { exportToReactNative } from "../utils/exportToReactNative";
+import { generateProjectZip } from "../utils/generateZip";
+import { persistence } from "../utils/persistence";
 import { useElementActions } from "../hooks/useElementActions";
 import { useCanvasInteractions } from "../hooks/useCanvasInteractions";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { ELEMENT_TYPES, elementRegistry } from "../registry/elementRegistry";
 
-const MIN_CANVAS_WIDTH = 420;
-const MIN_CANVAS_HEIGHT = 320;
+const INITIAL_NAVIGATION = {
+  enabled: true,
+  tabs: [
+    { id: "tab-1", label: "Home", icon: "home", targetPageId: "home-page" },
+    { id: "tab-2", label: "Profile", icon: "user", targetPageId: "profile-page" },
+  ],
+};
+
+const INITIAL_PAGES = [
+  {
+    id: "home-page",
+    name: "Home",
+    elements: [
+      {
+        id: "header-text",
+        type: ELEMENT_TYPES.TEXT,
+        x: 24,
+        y: 60,
+        width: 200,
+        height: 40,
+        text: "Welcome Back",
+        fontSize: 28,
+        fontWeight: "700",
+        color: "#1D1D1F",
+        parentId: null,
+      },
+    ],
+  },
+  {
+    id: "profile-page",
+    name: "Profile",
+    elements: [
+      {
+        id: "profile-header",
+        type: ELEMENT_TYPES.TEXT,
+        x: 24,
+        y: 60,
+        width: 200,
+        height: 40,
+        text: "My Profile",
+        fontSize: 28,
+        fontWeight: "700",
+        color: "#1D1D1F",
+        parentId: null,
+      },
+    ],
+  }
+];
 
 export default function BuilderScreen() {
   const canvasRef = useRef(null);
@@ -20,43 +68,54 @@ export default function BuilderScreen() {
   const [canvasSize, setCanvasSize] = useState({ width: 375, height: 812 });
   const [interaction, setInteraction] = useState(null);
   const [rightSidebarTab, setRightSidebarTab] = useState("properties");
+  const [leftSidebarTab, setLeftSidebarTab] = useState("components");
   const [deviceType, setDeviceType] = useState("ios");
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
+  const [isGridEnabled, setIsGridEnabled] = useState(false);
+  const [snapToGrid, setSnapToGrid] = useState(false);
+  const [gridConfig, setGridConfig] = useState({ rows: 10, cols: 5 });
 
-  const [elements, setElements] = useState([
-    {
-      id: "root-safe-area",
-      type: ELEMENT_TYPES.SAFE_AREA,
-      x: 0,
-      y: 0,
-      width: "100%",
-      height: "100%",
-      parentId: null,
-      backgroundColor: "transparent",
-    },
-    {
-      id: "header-text",
-      type: ELEMENT_TYPES.TEXT,
-      x: 24,
-      y: 60,
-      width: 200,
-      height: 40,
-      text: "Welcome Back",
-      fontSize: 28,
-      fontWeight: "700",
-      color: "#1D1D1F",
-      parentId: null,
-    },
-  ]);
+  const [pages, setPages] = useState(() => {
+    const saved = persistence.loadProject();
+    return saved?.pages || INITIAL_PAGES;
+  });
+  const [activePageId, setActivePageId] = useState(pages[0].id);
+  const [navigationConfig, setNavigationConfig] = useState(() => {
+    const saved = persistence.loadProject();
+    return saved?.navigationConfig || INITIAL_NAVIGATION;
+  });
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const { addElement, updateElement, deleteElement } = useElementActions(
-    elements,
-    setElements,
+  useEffect(() => {
+    persistence.saveProject({ pages, navigationConfig });
+  }, [pages, navigationConfig]);
+
+  const activePage = pages.find(p => p.id === activePageId) || pages[0];
+  const elements = activePage.elements;
+
+  const { 
+    addElement, 
+    updateElement, 
+    deleteElement, 
+    addPage, 
+    deletePage, 
+    renamePage,
+    updateNavigation
+  } = useElementActions(
+    pages,
+    setPages,
+    activePageId,
     canvasSize,
     setActiveId,
     setEditingId,
-    setDraftText
+    setDraftText,
+    navigationConfig,
+    setNavigationConfig
   );
+
+  function handleAddChild(parentId) {
+    addElement(ELEMENT_TYPES.CONTAINER, { parentId });
+  }
 
   function commitDraftText() {
     if (editingId === null) return;
@@ -72,30 +131,39 @@ export default function BuilderScreen() {
     hoveredContainerId,
   } = useCanvasInteractions({
     canvasRef,
-    elements,
-    setElements,
+    pages,
+    setPages,
+    activePageId,
     interaction,
     setInteraction,
     isPreviewMode,
     setActiveId,
     editingId,
     commitDraftText,
+    snapToGrid,
+    gridConfig,
+    canvasSize,
+    onToggleDrawer: () => setIsDrawerOpen(prev => !prev),
   });
 
   useKeyboardShortcuts({
     activeId,
     setActiveId,
     setEditingId,
-    elements,
-    setElements,
+    pages,
+    setPages,
+    activePageId,
     canvasSize,
     isPreviewMode,
   });
 
-  function exportRN() {
-    const code = exportToReactNative(elements);
-    navigator.clipboard.writeText(code);
-    alert("React Native code copied to clipboard!");
+  async function exportRN() {
+    try {
+      await generateProjectZip(elements, pages, navigationConfig);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to generate project ZIP. Check console for details.");
+    }
   }
 
   useEffect(() => {
@@ -146,6 +214,7 @@ export default function BuilderScreen() {
     onElementPointerDown: handleElementPointerDown,
     onElementResizePointerDown: handleElementResizePointerDown,
     onElementDoubleClick: startEditing,
+    onAddChild: handleAddChild,
     onDraftTextChange: setDraftText,
     onDraftTextCommit: commitDraftText,
     onDraftTextKeyDown: (e) => {
@@ -153,28 +222,97 @@ export default function BuilderScreen() {
       if (e.key === "Escape") setEditingId(null);
     },
     isPreviewMode,
+    isGridEnabled,
+    gridConfig,
+    onNavigate: (pageId) => {
+      setActivePageId(pageId);
+      setActiveId(null);
+      setIsDrawerOpen(false);
+    },
+    onToggleDrawer: () => setIsDrawerOpen(prev => !prev),
+    navigationConfig,
   };
 
   return (
     <main className={`builder-screen ${isPreviewMode ? "is-preview" : ""}`}>
-      {/* Left Sidebar: Components */}
+      {/* Left Sidebar */}
       {!isPreviewMode && (
         <aside className={`builder-sidebar ${leftSidebarCollapsed ? "is-collapsed" : ""}`}>
-          <div className="sidebar-header">
-            <h2>Components</h2>
+          <div className="sidebar-tabs">
+            <button
+              className={`tab-button ${leftSidebarTab === "components" ? "is-active" : ""}`}
+              onClick={() => setLeftSidebarTab("components")}
+            >
+              Components
+            </button>
+            <button
+              className={`tab-button ${leftSidebarTab === "pages" ? "is-active" : ""}`}
+              onClick={() => setLeftSidebarTab("pages")}
+            >
+              Pages
+            </button>
           </div>
+          
           <div className="sidebar-content">
-            <div className="component-grid">
-              {Object.entries(elementRegistry).map(([type, config]) => (
-                <button 
-                  key={type} 
-                  className="component-item" 
-                  onClick={() => addElement(type, { parentId: null })}
-                >
-                  <span>{config.label}</span>
+            {leftSidebarTab === "components" && (
+              <div className="component-grid">
+                {Object.entries(elementRegistry).map(([type, config]) => (
+                  <button 
+                    key={type} 
+                    className="component-item" 
+                    onClick={() => {
+                      const parent = activeId ? elements.find(el => el.id === activeId) : null;
+                      const isContainer = parent && [
+                        ELEMENT_TYPES.CONTAINER, 
+                        ELEMENT_TYPES.SAFE_AREA, 
+                        ELEMENT_TYPES.SCROLL_VIEW, 
+                        ELEMENT_TYPES.CARD, 
+                        ELEMENT_TYPES.ROW, 
+                        ELEMENT_TYPES.COLUMN,
+                        ELEMENT_TYPES.FLAT_LIST,
+                        ELEMENT_TYPES.FLAT_LIST_HORIZONTAL,
+                        ELEMENT_TYPES.STACK_HEADER,
+                        ELEMENT_TYPES.DRAWER
+                      ].includes(parent.type);
+                      
+                      addElement(type, { parentId: isContainer ? activeId : null });
+                    }}
+                  >
+                    <span>{config.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {leftSidebarTab === "pages" && (
+              <div className="pages-list">
+                {pages.map(page => (
+                  <div 
+                    key={page.id} 
+                    className={`page-item ${activePageId === page.id ? "is-active" : ""}`}
+                    onClick={() => {
+                      setActivePageId(page.id);
+                      setActiveId(null);
+                    }}
+                  >
+                    <span>{page.name}</span>
+                    {pages.length > 1 && (
+                      <button className="delete-page-btn" onClick={(e) => {
+                        e.stopPropagation();
+                        deletePage(page.id);
+                        if (activePageId === page.id) setActivePageId(pages[0].id);
+                      }}>×</button>
+                    )}
+                  </div>
+                ))}
+                <button className="btn btn--secondary" style={{ width: "100%", marginTop: "12px" }} onClick={() => {
+                  const newId = addPage(`Page ${pages.length + 1}`);
+                  setActivePageId(newId);
+                }}>
+                  + Add Page
                 </button>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         </aside>
       )}
@@ -215,9 +353,26 @@ export default function BuilderScreen() {
               </button>
             </div>
 
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button 
+                className={`btn ${isGridEnabled ? "btn--primary" : "btn--secondary"}`}
+                onClick={() => setIsGridEnabled(!isGridEnabled)}
+                title="Toggle Grid"
+              >
+                Grid
+              </button>
+              <button 
+                className={`btn ${snapToGrid ? "btn--primary" : "btn--secondary"}`}
+                onClick={() => setSnapToGrid(!snapToGrid)}
+                title="Toggle Snapping"
+              >
+                Snap
+              </button>
+            </div>
+
             <div className="topbar-actions">
               <button className="btn btn--secondary" onClick={exportRN}>
-                Export Code
+                Export ZIP
               </button>
               <button className="btn btn--primary" onClick={togglePreviewMode}>
                 Preview
@@ -237,14 +392,25 @@ export default function BuilderScreen() {
                 Back to Editor
               </button>
             )}
-            <PhoneFrame deviceType={deviceType}>
+            <PhoneFrame 
+              deviceType={deviceType}
+              navigationConfig={navigationConfig}
+              activePageId={activePageId}
+              isDrawerOpen={isDrawerOpen}
+              onCloseDrawer={() => setIsDrawerOpen(false)}
+              onNavigate={(pageId) => {
+                setActivePageId(pageId);
+                setActiveId(null);
+                setIsDrawerOpen(false);
+              }}
+            >
               <Canvas {...canvasProps} />
             </PhoneFrame>
           </div>
         </div>
       </section>
 
-      {/* Right Sidebar: Controls */}
+      {/* Right Sidebar */}
       {!isPreviewMode && (
         <aside className="builder-sidebar builder-sidebar--right">
           <div className="sidebar-tabs">
@@ -272,13 +438,28 @@ export default function BuilderScreen() {
             {rightSidebarTab === "properties" && (
               <EditPanel
                 element={selectedElement}
+                pages={pages}
+                navigationConfig={navigationConfig}
                 onUpdate={(patch) => updateElement(activeId, patch)}
+                updateNavigation={updateNavigation}
                 onDelete={() => deleteElement(activeId)}
               />
             )}
             {rightSidebarTab === "code" && (
-              <div className="code-preview">
-                {exportToReactNative(elements)}
+              <div className="code-panel">
+                <div className="code-panel__header">
+                  <span>React Native (Expo)</span>
+                  <button className="copy-button" onClick={() => {
+                    const code = exportToReactNative(elements, pages, navigationConfig);
+                    navigator.clipboard.writeText(code);
+                    alert("Copied to clipboard!");
+                  }}>
+                    Copy
+                  </button>
+                </div>
+                <div className="code-preview">
+                  {exportToReactNative(elements, pages, navigationConfig)}
+                </div>
               </div>
             )}
             {rightSidebarTab === "layers" && (
