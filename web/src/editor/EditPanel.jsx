@@ -19,6 +19,11 @@ function PropertyGroup({ title, children }) {
   );
 }
 
+const commonIcons = [
+  "Home", "User", "Settings", "Search", "Heart", "Bell", "Share", "Mail", 
+  "Camera", "ChevronRight", "ChevronLeft", "Plus", "Trash", "Check", "X"
+];
+
 export default function EditPanel({ element, pages, navigationConfig, onUpdate, updateNavigation, onDelete }) {
   const [activeTab, setActiveTab] = useState("styles");
 
@@ -61,6 +66,24 @@ export default function EditPanel({ element, pages, navigationConfig, onUpdate, 
                     updateNavigation({ tabs: nextTabs });
                   }} />
                 </ControlField>
+                <ControlField label="Icon">
+                  <div className="icon-grid">
+                    {commonIcons.map(icon => (
+                      <button 
+                        key={icon}
+                        className={`icon-grid-btn ${tab.icon === icon ? "is-active" : ""}`}
+                        onClick={() => {
+                          const nextTabs = [...navigationConfig.tabs];
+                          nextTabs[index] = { ...tab, icon };
+                          updateNavigation({ tabs: nextTabs });
+                        }}
+                        title={icon}
+                      >
+                        {icon.slice(0, 3)}
+                      </button>
+                    ))}
+                  </div>
+                </ControlField>
                 <ControlField label="Link">
                   <select className="input-control" value={tab.targetPageId} onChange={(e) => {
                     const nextTabs = [...navigationConfig.tabs];
@@ -80,10 +103,34 @@ export default function EditPanel({ element, pages, navigationConfig, onUpdate, 
 
   const isText = [ELEMENT_TYPES.TEXT, ELEMENT_TYPES.BUTTON].includes(element.type);
   const isImage = element.type === ELEMENT_TYPES.IMAGE;
+  const isIcon = element.type === ELEMENT_TYPES.ICON;
   const isContainer = [ELEMENT_TYPES.CONTAINER, ELEMENT_TYPES.CARD, ELEMENT_TYPES.ROW, ELEMENT_TYPES.COLUMN].includes(element.type);
 
   return (
     <div className="edit-panel">
+      <div style={{ 
+        display: "flex", 
+        alignItems: "center", 
+        gap: "8px", 
+        marginBottom: "20px", 
+        padding: "0 4px" 
+      }}>
+        <div style={{ 
+          backgroundColor: "var(--accent)", 
+          color: "white", 
+          fontSize: "10px", 
+          fontWeight: "700", 
+          padding: "2px 6px", 
+          borderRadius: "4px",
+          textTransform: "uppercase"
+        }}>
+          {element.type}
+        </div>
+        <span style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: "500" }}>
+          Active Element
+        </span>
+      </div>
+
       <div className="sidebar-tabs" style={{ padding: 0, marginBottom: "20px" }}>
         <button className={`tab-button ${activeTab === "styles" ? "is-active" : ""}`} onClick={() => setActiveTab("styles")}>Styles</button>
         <button className={`tab-button ${activeTab === "config" ? "is-active" : ""}`} onClick={() => setActiveTab("config")}>Config</button>
@@ -91,6 +138,53 @@ export default function EditPanel({ element, pages, navigationConfig, onUpdate, 
 
       {activeTab === "styles" && (
         <>
+          {isImage && (
+            <PropertyGroup title="Image Source">
+              <ControlField label="Image URL">
+                <input 
+                  className="input-control" 
+                  value={element.src || ""} 
+                  onChange={(e) => onUpdate({ src: e.target.value })} 
+                  placeholder="https://via.placeholder.com/..."
+                />
+              </ControlField>
+            </PropertyGroup>
+          )}
+
+          {isIcon && (
+            <PropertyGroup title="Icon Settings">
+              <ControlField label="Icon Name">
+                <input 
+                  className="input-control" 
+                  value={element.iconName || ""} 
+                  onChange={(e) => onUpdate({ iconName: e.target.value })} 
+                  placeholder="Search icons..."
+                />
+              </ControlField>
+              <div className="icon-grid">
+                {commonIcons.map(icon => (
+                  <button 
+                    key={icon}
+                    className={`icon-grid-btn ${element.iconName === icon ? "is-active" : ""}`}
+                    onClick={() => onUpdate({ iconName: icon })}
+                    title={icon}
+                  >
+                    {icon.slice(0, 3)}
+                  </button>
+                ))}
+              </div>
+              <ControlField label="Size">
+                <input className="input-control" type="number" value={element.size || 24} onChange={(e) => onUpdate({ size: Number(e.target.value) })} />
+              </ControlField>
+              <ControlField label="Color">
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input type="color" className="input-control" style={{ width: "40px", padding: "2px" }} value={element.color || "#000000"} onChange={(e) => onUpdate({ color: e.target.value })} />
+                  <input className="input-control" value={element.color || "#000000"} onChange={(e) => onUpdate({ color: e.target.value })} />
+                </div>
+              </ControlField>
+            </PropertyGroup>
+          )}
+
           <PropertyGroup title="Dimensions">
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
               <ControlField label="W">

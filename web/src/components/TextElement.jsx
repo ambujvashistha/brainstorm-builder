@@ -16,16 +16,28 @@ export default function TextElement({
     width: "100%",
     height: "100%",
     display: "flex",
-    alignItems: "center",
+    alignItems: element.verticalAlign === "bottom" ? "flex-end" : element.verticalAlign === "top" ? "flex-start" : "center",
     justifyContent: element.textAlign === "center" ? "center" : element.textAlign === "right" ? "flex-end" : "flex-start",
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
+    whiteSpace: "pre-wrap",
+    overflow: "hidden",
   };
 
   if (isEditing) {
     return (
-      <input
+      <textarea
         autoFocus
         className="canvas-input"
-        style={{ ...style, background: "transparent", border: "none", outline: "none", padding: 0 }}
+        style={{ 
+          ...style, 
+          background: "transparent", 
+          border: "none", 
+          outline: "none", 
+          padding: 0,
+          resize: "none",
+          fontFamily: "inherit",
+        }}
         value={draftText}
         onChange={(e) => onDraftTextChange(e.target.value)}
         onBlur={onDraftTextCommit}
@@ -36,7 +48,9 @@ export default function TextElement({
 
   return (
     <div style={style}>
-      {element.text}
+      <span style={{ width: "100%" }}>
+        {element.text}
+      </span>
     </div>
   );
 }
