@@ -1,14 +1,11 @@
 <div align="center">
 
-<img src="screenshots/logo.png" width="120" alt="Brainstorm Logo" />
-
 # Brainstorm Builder
 
 ### High-performance, low-code visual editor for React Native — Made Simple
 
 A "WYSIWYG" environment that allows developers and designers to build complex mobile UIs and export production-ready Expo code.
 
-🎥 **[Watch the App Demo Video here](https://link-to-your-demo.com)**
 
 Built with **React 19** | Powered by **Vite** | Exporting to **Expo**
 
@@ -28,47 +25,33 @@ The editor provides a seamless developer experience with real-time JSON schema s
 
 ### 🖥️ Workspace & Canvas
 
-<img src="screenshots/01_workspace_dark.png" width="100%" alt="Dark Theme" />
+<img width="1504" height="849" alt="dark_image" src="https://github.com/user-attachments/assets/35529e93-1932-4d0a-9a5b-89b5e78608a3" />
+
 
 **Dark Theme** — The primary workspace uses a deep, glassmorphism-inspired dark theme designed for focus and reduced eye strain. The multi-sidebar layout keeps assets, layers, and inspectors easily accessible.
 
 ---
-
-<img src="screenshots/02_workspace_light.png" width="100%" alt="Light Theme" />
+<img width="1505" height="851" alt="white_image" src="https://github.com/user-attachments/assets/2868d712-9990-4d1d-9c3f-08c13bc5936b" />
 
 **Light Theme** — For those who prefer a brighter environment, the editor features a clean, high-contrast light theme. All UI elements, from the canvas to the sidebar tabs, adapt perfectly to the light color palette.
 
 ---
 
-<img src="screenshots/03_grid_snapping.png" width="100%" alt="Grid & Snapping" />
+<img width="1512" height="982" alt="grid" src="https://github.com/user-attachments/assets/b4a6b6f6-1f8b-46ec-9db5-4722590164d0" />
 
 **Grid & Snapping** — High-precision alignment guides. The engine provides real-time snapping to grid lines and relative positioning to other elements, ensuring pixel-perfect layouts without manual coordinate entry.
 
 ---
 
-### 🔍 Inspector & Code Preview
-
-<img src="screenshots/04_inspector.png" width="100%" alt="Properties Inspector" />
-
-**Properties Inspector** — Deeply customize every element. Change typography, colors, layout properties (Flexbox), and interaction types (Navigation, Toggle Drawer) through a clean, intuitive interface.
-
----
-
-<img src="screenshots/05_code_preview.png" width="100%" alt="Live Code Preview" />
-
-**Live Code Preview** — See the React Native code as you build. The right sidebar can switch between the Inspector and a live-updating code view, showing the exact JSX and Stylesheet code that will be exported.
-
----
-
 ### 🚀 Preview & Export
 
-<img src="screenshots/07_preview.png" width="100%" alt="Preview Mode" />
+<img width="1499" height="848" alt="Screenshot 2026-05-12 at 7 46 50 PM" src="https://github.com/user-attachments/assets/80e307ba-9d9a-45d4-8454-c1f634f0569f" />
 
 **Preview Mode** — Test your app's feel instantly. Toggle Preview Mode to hide the editor chrome and interact with your UI as it would appear on a real device, including functioning navigation and button interactions.
 
 ---
 
-<img src="screenshots/09_export.png" width="100%" alt="Export App" />
+<img width="1512" height="982" alt="Screenshot 2026-05-12 at 7 48 28 PM" src="https://github.com/user-attachments/assets/e109ff01-6316-463f-8323-c6c2375186a9" />
 
 **Export App** — From design to code in one click. The export system bundles your entire project — including screens, navigation config, and component registry — into a clean ZIP file ready for Expo.
 
