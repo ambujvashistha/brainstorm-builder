@@ -57,8 +57,11 @@ export default function BuilderScreen() {
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
   const [isGridEnabled, setIsGridEnabled] = useState(true);
   const [snapToGrid, setSnapToGrid] = useState(true);
-  const [gridConfig, setGridConfig] = useState({ rows: 12, cols: 8 });
+  const [gridConfig, setGridConfig] = useState({ size: 10 });
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("app-theme") || "dark";
+  });
 
   const [pages, setPages] = useState(() => {
     const saved = persistence.loadProject();
@@ -74,6 +77,14 @@ export default function BuilderScreen() {
   useEffect(() => {
     persistence.saveProject({ pages, navigationConfig });
   }, [pages, navigationConfig]);
+
+  useEffect(() => {
+    localStorage.setItem("app-theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === "dark" ? "light" : "dark");
+  };
 
   const activePage = pages.find(p => p.id === activePageId) || pages[0];
   const elements = activePage?.elements || [];
@@ -202,7 +213,7 @@ export default function BuilderScreen() {
   };
 
   return (
-    <main className={`builder-screen ${isPreviewMode ? "is-preview" : ""}`}>
+    <main className={`builder-screen theme-${theme} ${isPreviewMode ? "is-preview" : ""}`}>
       {/* Top Bar */}
       {!isPreviewMode && (
         <header className="builder-main__topbar glass-panel">
@@ -217,6 +228,9 @@ export default function BuilderScreen() {
           </div>
 
           <div className="topbar-actions">
+            <button className="btn" onClick={toggleTheme} style={{ width: "40px", justifyContent: "center", padding: 0 }}>
+              {theme === "dark" ? "🌙" : "☀️"}
+            </button>
             <button className="btn btn--accent" onClick={() => setIsAIModalOpen(true)}>AI Generate</button>
             <button className="btn" onClick={exportRN}>Export App</button>
             <button className="btn btn--primary" onClick={() => setIsPreviewMode(true)}>Preview</button>
@@ -252,6 +266,20 @@ export default function BuilderScreen() {
                   {pages.map(page => (
                     <div key={page.id} className={`page-item ${activePageId === page.id ? "is-active" : ""}`} onClick={() => setActivePageId(page.id)}>
                       <span>{page.name}</span>
+                      {pages.length > 1 && (
+                        <div className="page-item__actions">
+                          <button 
+                            className="btn" 
+                            style={{ height: "20px", width: "20px", padding: 0, justifyContent: "center", border: "none", background: "transparent", color: "inherit" }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Delete page "${page.name}"?`)) deletePage(page.id);
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                   <button className="btn btn--secondary" style={{ width: "100%", marginTop: "12px" }} onClick={() => addPage("New Page")}>+ Add Page</button>
@@ -302,7 +330,20 @@ export default function BuilderScreen() {
                 />
               ) : (
                 <div className="code-panel">
-                  <div className="code-preview" style={{ padding: "16px", fontSize: "11px", whiteSpace: "pre-wrap" }}>
+                  <div style={{ padding: "12px", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "flex-end" }}>
+                    <button 
+                      className="btn btn--primary" 
+                      style={{ height: "24px", fontSize: "11px", padding: "0 8px" }}
+                      onClick={() => {
+                        const code = exportToReactNative(elements, pages, navigationConfig);
+                        navigator.clipboard.writeText(code);
+                        alert("Code copied to clipboard!");
+                      }}
+                    >
+                      Copy Code
+                    </button>
+                  </div>
+                  <div className="code-preview" style={{ padding: "16px", fontSize: "11px", whiteSpace: "pre-wrap", overflowY: "auto", flex: 1 }}>
                     {exportToReactNative(elements, pages, navigationConfig)}
                   </div>
                 </div>

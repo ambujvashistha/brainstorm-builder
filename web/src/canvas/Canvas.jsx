@@ -4,6 +4,7 @@ import ContainerElement from "../components/ContainerElement";
 import ButtonElement from "../components/ButtonElement";
 import TextInputElement from "../components/TextInputElement";
 import CardElement from "../components/CardElement";
+import IconElement from "../components/IconElement";
 import { ELEMENT_TYPES } from "../registry/elementRegistry";
 
 const ELEMENT_COMPONENTS = {
@@ -15,6 +16,7 @@ const ELEMENT_COMPONENTS = {
   [ELEMENT_TYPES.TEXT_INPUT]: TextInputElement,
   [ELEMENT_TYPES.BUTTON]: ButtonElement,
   [ELEMENT_TYPES.CARD]: CardElement,
+  [ELEMENT_TYPES.ICON]: IconElement,
   [ELEMENT_TYPES.ROW]: ContainerElement,
   [ELEMENT_TYPES.COLUMN]: ContainerElement,
   [ELEMENT_TYPES.FLAT_LIST]: ContainerElement,
@@ -114,6 +116,9 @@ export default function Canvas({
 
         {!isPreviewMode && isActive && (
           <>
+            <div className="selection-label">
+              {element.type.toUpperCase()}
+            </div>
             <div
               className="resize-handle"
               onPointerDown={(event) => {
@@ -133,7 +138,7 @@ export default function Canvas({
     <div
       ref={canvasRef}
       className="canvas-root"
-      style={{ flex: 1, width: "100%", height: "100%", position: "relative", background: "#fff", overflow: "hidden" }}
+      style={{ flex: 1, width: "100%", height: "100%", position: "relative", overflow: "hidden" }}
       onPointerDown={onCanvasPointerDown}
     >
       {rootElements.map((el) => renderElement(el))}

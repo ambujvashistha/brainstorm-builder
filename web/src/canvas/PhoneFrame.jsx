@@ -1,3 +1,5 @@
+import * as LucideIcons from "lucide-react";
+
 export default function PhoneFrame({ 
   children, 
   deviceType = "ios", 
@@ -10,17 +12,23 @@ export default function PhoneFrame({
   const isAndroid = deviceType === "android";
   const tabs = navigationConfig?.tabs || [];
 
+  const renderIcon = (name, size = 20) => {
+    const formattedName = (name || "Circle").charAt(0).toUpperCase() + (name || "Circle").slice(1);
+    const Icon = LucideIcons[formattedName] || LucideIcons.Circle;
+    return <Icon size={size} />;
+  };
+
   return (
     <div className="phone-frame" style={{ 
       width: isAndroid ? "360px" : "375px", 
       height: isAndroid ? "740px" : "812px",
       borderRadius: isAndroid ? "32px" : "50px"
     }}>
-      <div className="phone-frame__inner">
+      <div className="phone-frame__inner" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
         {!isAndroid && <div className="phone-frame__notch" />}
         <div className="phone-frame__status-bar" />
         
-        <div className="phone-frame__viewport">
+        <div className="phone-frame__viewport" style={{ flex: 1, minHeight: 0, position: "relative" }}>
           {children}
           
           {/* Real Global Drawer - Moved INSIDE viewport to stay within phone bounds */}
@@ -37,9 +45,8 @@ export default function PhoneFrame({
                     className={`drawer-item ${activePageId === tab.targetPageId ? "is-active" : ""}`}
                     onClick={() => onNavigate && onNavigate(tab.targetPageId)}
                   >
-                    <div className="drawer-icon">
-                      {/* Simple placeholder for icon */}
-                      <div style={{ width: 12, height: 12, borderRadius: 2, background: "currentColor" }} />
+                    <div className="drawer-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {renderIcon(tab.icon, 18)}
                     </div>
                     <span>{tab.label}</span>
                   </button>
@@ -57,7 +64,9 @@ export default function PhoneFrame({
                 className={`phone-tab-item ${activePageId === tab.targetPageId ? "is-active" : ""}`}
                 onClick={() => onNavigate && onNavigate(tab.targetPageId)}
               >
-                <div className={`phone-tab-icon phone-tab-icon--${tab.icon}`} />
+                <div className="phone-tab-icon-wrapper">
+                  {renderIcon(tab.icon)}
+                </div>
                 <span>{tab.label}</span>
               </button>
             ))}
