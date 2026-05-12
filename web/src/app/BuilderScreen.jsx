@@ -3,7 +3,6 @@ import Canvas from "../canvas/Canvas";
 import EditPanel from "../editor/EditPanel";
 import PhoneFrame from "../canvas/PhoneFrame";
 import LayersPanel from "../layers/LayersPanel";
-import AIModal from "../panels/AIModal";
 import { TEMPLATES } from "../templates/templates";
 import { exportToReactNative } from "../export/exportToReactNative";
 import { generateProjectZip } from "../export/generateZip";
@@ -58,7 +57,6 @@ export default function BuilderScreen() {
   const [isGridEnabled, setIsGridEnabled] = useState(true);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [gridConfig, setGridConfig] = useState({ size: 10 });
-  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem("app-theme") || "dark";
   });
@@ -159,19 +157,6 @@ export default function BuilderScreen() {
     }
   }
 
-  const handleAIGenerate = (prompt) => {
-    // Pick a template based on prompt keywords or random
-    const templateKey = prompt.toLowerCase().includes("fintech") ? "FINTECH" : "ECOMMERCE";
-    const template = TEMPLATES[templateKey];
-    
-    setPages(prev => prev.map(page => {
-      if (page.id === activePageId) {
-        return { ...page, elements: template.elements };
-      }
-      return page;
-    }));
-  };
-
   const selectedElement = activeId !== null ? elements.find(el => el.id === activeId) : null;
 
   const canvasProps = {
@@ -231,7 +216,6 @@ export default function BuilderScreen() {
             <button className="btn" onClick={toggleTheme} style={{ width: "40px", justifyContent: "center", padding: 0 }}>
               {theme === "dark" ? "🌙" : "☀️"}
             </button>
-            <button className="btn btn--accent" onClick={() => setIsAIModalOpen(true)}>AI Generate</button>
             <button className="btn" onClick={exportRN}>Export App</button>
             <button className="btn btn--primary" onClick={() => setIsPreviewMode(true)}>Preview</button>
           </div>
@@ -266,8 +250,19 @@ export default function BuilderScreen() {
                   {pages.map(page => (
                     <div key={page.id} className={`page-item ${activePageId === page.id ? "is-active" : ""}`} onClick={() => setActivePageId(page.id)}>
                       <span>{page.name}</span>
-                      {pages.length > 1 && (
-                        <div className="page-item__actions">
+                      <div className="page-item__actions">
+                        <button 
+                          className="btn" 
+                          style={{ height: "20px", width: "20px", padding: 0, justifyContent: "center", border: "none", background: "transparent", color: "inherit" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newName = prompt("Enter new page name:", page.name);
+                            if (newName && newName.trim()) renamePage(page.id, newName.trim());
+                          }}
+                        >
+                          ✎
+                        </button>
+                        {pages.length > 1 && (
                           <button 
                             className="btn" 
                             style={{ height: "20px", width: "20px", padding: 0, justifyContent: "center", border: "none", background: "transparent", color: "inherit" }}
@@ -278,8 +273,8 @@ export default function BuilderScreen() {
                           >
                             ×
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   ))}
                   <button className="btn btn--secondary" style={{ width: "100%", marginTop: "12px" }} onClick={() => addPage("New Page")}>+ Add Page</button>
@@ -352,12 +347,6 @@ export default function BuilderScreen() {
           </aside>
         )}
       </div>
-
-      <AIModal 
-        isOpen={isAIModalOpen} 
-        onClose={() => setIsAIModalOpen(false)} 
-        onGenerate={handleAIGenerate} 
-      />
     </main>
   );
 }
