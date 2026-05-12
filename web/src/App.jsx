@@ -1,5 +1,5 @@
-import BuilderScreen from "./screens/BuilderScreen";
-import "./App.css";
+import BuilderScreen from "./app/BuilderScreen";
+import "./styles/App.css";
 
 function App() {
   return (

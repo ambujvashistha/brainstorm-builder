@@ -1,16 +1,50 @@
-# React + Vite
+# Brainstorm Builder
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Brainstorm Builder is a high-performance, low-code visual editor for React Native. Designed for rapid prototyping, it allows developers and designers to build complex mobile UIs in a "WYSIWYG" environment and export production-ready Expo code.
 
-Currently, two official plugins are available:
+![Hero Image](src/assets/hero.png)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Key Features
 
-## React Compiler
+- **Recursive Rendering Engine:** Supports infinite nesting of UI components (Containers, Rows, Columns, Cards).
+- **Smart Snapping Engine:** High-precision alignment guides relative to canvas boundaries and other elements.
+- **AI-Powered Layout Generation:** Describe your screen and watch Brainstorm AI build the initial structure for you.
+- **Modular Expo Export:** Generates a structured React Native project with separate screens, navigation, and optimized styles.
+- **Dynamic Registry:** Easily extend the component library via a centralized JSON-driven registry.
+- **Live JSON Schema:** Bi-directional editing between the visual canvas and the raw project schema.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🏗️ Architecture
 
-## Expanding the ESLint configuration
+Brainstorm is built with a modular, scalable architecture:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **`src/canvas`**: Core rendering logic and phone frame simulation.
+- **`src/editor`**: The Inspector panel and property controls.
+- **`src/layers`**: Nested hierarchy management.
+- **`src/export`**: Advanced logic for mapping JSON schemas to production React Native code.
+- **`src/hooks`**: Custom state management for complex pointer interactions and element lifecycle.
+
+## 🛠️ Tech Stack
+
+- **Framework:** React 19 (Vite)
+- **Styling:** Modern CSS (Dark Theme, Glassmorphism)
+- **Interactions:** Native Pointer Events API
+- **Exports:** JSZip, FileSaver
+- **Code Gen:** Dynamic Component Mapping
+
+## 📦 Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Start the development server: `npm run dev`
+4. Build your UI and click **Export App** to get your React Native project.
+
+## 🗺️ Future Roadmap
+
+- [ ] Real-time collaboration via WebSockets
+- [ ] Component Marketplace integration
+- [ ] Direct export to GitHub/Vercel
+- [ ] Native support for Animation (Reanimated) logic
+
+---
+
+Built with ❤️ for the mobile development community.

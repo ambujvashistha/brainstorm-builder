@@ -1,9 +1,9 @@
-import TextElement from "../elements/TextElement";
-import ImageElement from "../elements/ImageElement";
-import ContainerElement from "../elements/ContainerElement";
-import ButtonElement from "../elements/ButtonElement";
-import TextInputElement from "../elements/TextInputElement";
-import CardElement from "../elements/CardElement";
+import TextElement from "../components/TextElement";
+import ImageElement from "../components/ImageElement";
+import ContainerElement from "../components/ContainerElement";
+import ButtonElement from "../components/ButtonElement";
+import TextInputElement from "../components/TextInputElement";
+import CardElement from "../components/CardElement";
 import { ELEMENT_TYPES } from "../registry/elementRegistry";
 
 const ELEMENT_COMPONENTS = {
@@ -50,8 +50,6 @@ export default function Canvas({
 
   const renderElement = (element, forceRoot = false) => {
     const isDraggingActual = interaction?.type === "drag-element" && interaction.id === element.id;
-    
-    // If it's the element being dragged, don't render it in its original place
     if (isDraggingActual && !forceRoot) return null;
 
     const isActive = element.id === activeId;
@@ -73,34 +71,21 @@ export default function Canvas({
       width: element.width,
       height: element.height,
       zIndex: isActive || forceRoot || element.isFixed ? 100 : 1,
-      opacity: isDraggingActual ? 0.6 : 1,
+      opacity: isDraggingActual ? 0.4 : 1,
       pointerEvents: isPreviewMode && !isClickableInPreview && element.type !== ELEMENT_TYPES.BUTTON ? "none" : (isDraggingActual && !forceRoot ? "none" : "auto"),
       cursor: isClickableInPreview ? "pointer" : (isAbsolute ? "grab" : "default"),
     };
-
-    if (element.isFixed && !element.parentId && !forceRoot) {
-      style.bottom = 0;
-      style.top = "auto";
-      style.left = 0;
-      style.right = 0;
-      style.width = "100%";
-    }
 
     return (
       <div
         key={element.id}
         data-id={element.id}
         data-type={element.type}
-        className={`canvas-item ${isActive ? "canvas-item--selected" : ""} ${isDraggingActual ? "is-dragging" : ""} ${isResizing ? "is-resizing" : ""} ${isHovered ? "element-container--hovered" : ""}`}
+        className={`canvas-item ${isActive ? "canvas-item--selected" : ""} ${isHovered ? "is-hovered" : ""}`}
         style={style}
         onPointerDown={(event) => {
           if (isPreviewMode) {
-            if (element.interactionType === "navigate" && element.targetPageId && onNavigate) {
-              onNavigate(element.targetPageId);
-            }
-            if (element.interactionType === "toggle-drawer" && onToggleDrawer) {
-              onToggleDrawer();
-            }
+            if (element.interactionType === "navigate" && element.targetPageId) onNavigate(element.targetPageId);
             return;
           }
           event.stopPropagation();
@@ -128,56 +113,43 @@ export default function Canvas({
         )}
 
         {!isPreviewMode && isActive && (
-          <div
-            className="resize-handle"
-            onPointerDown={(event) => {
-              event.stopPropagation();
-              onElementResizePointerDown(event, element.id);
-            }}
-          />
+          <>
+            <div
+              className="resize-handle"
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                onElementResizePointerDown(event, element.id);
+              }}
+            />
+          </>
         )}
       </div>
     );
   };
 
   const rootElements = elements.filter((el) => !el.parentId);
-  
-  const gridStyle = isGridEnabled ? {
-    backgroundSize: `${100 / (gridConfig?.cols || 12)}% ${100 / (gridConfig?.rows || 20)}%`,
-    backgroundImage: `
-      linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)
-    `,
-  } : {};
 
   return (
     <div
       ref={canvasRef}
-      className={`canvas-root ${isGridEnabled ? "show-grid" : ""}`}
-      style={{
-        flex: 1,
-        width: "100%",
-        position: "relative",
-        background: "#fff",
-        overflow: "hidden",
-        ...gridStyle,
-      }}
+      className="canvas-root"
+      style={{ flex: 1, width: "100%", height: "100%", position: "relative", background: "#fff", overflow: "hidden" }}
       onPointerDown={onCanvasPointerDown}
     >
       {rootElements.map((el) => renderElement(el))}
       {draggingElement && renderElement(draggingElement, true)}
 
-      {/* Smart Snapping Guides */}
-      {!isPreviewMode && interaction && (
+      {!isPreviewMode && interaction?.guides && (
         <div className="snapping-guides" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1000 }}>
-          {interaction.guides?.vertical.map((x, i) => (
-            <div key={`v-${i}`} style={{ position: "absolute", left: x, top: 0, bottom: 0, width: "1px", backgroundColor: "#ff00ff", boxShadow: "0 0 4px rgba(255,0,255,0.5)" }} />
+          {interaction.guides.vertical.map((x, i) => (
+            <div key={`v-${i}`} className="guide-line" style={{ position: "absolute", left: x, top: 0, bottom: 0, width: "1px", backgroundColor: "var(--accent)", boxShadow: "0 0 8px var(--accent)" }} />
           ))}
-          {interaction.guides?.horizontal.map((y, i) => (
-            <div key={`h-${i}`} style={{ position: "absolute", top: y, left: 0, right: 0, height: "1px", backgroundColor: "#ff00ff", boxShadow: "0 0 4px rgba(255,0,255,0.5)" }} />
+          {interaction.guides.horizontal.map((y, i) => (
+            <div key={`h-${i}`} className="guide-line" style={{ position: "absolute", top: y, left: 0, right: 0, height: "1px", backgroundColor: "var(--accent)", boxShadow: "0 0 8px var(--accent)" }} />
           ))}
         </div>
       )}
     </div>
   );
 }
+
