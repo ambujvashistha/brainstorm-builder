@@ -21,7 +21,7 @@ export function useCanvasInteractions({
   const activePage = pages.find(p => p.id === activePageId);
   const elements = activePage?.elements || [];
 
-  const SNAP_THRESHOLD = 5;
+  const SNAP_THRESHOLD = 8;
 
   const getGridStep = () => ({
     x: canvasSize.width / (gridConfig?.cols || 12),
@@ -35,45 +35,85 @@ export function useCanvasInteractions({
     const horizontalGuides = [];
     let snappedX = x;
     let snappedY = y;
+    let foundV = false;
+    let foundH = false;
 
     if (isPreviewMode) return { snappedX, snappedY, verticalGuides, horizontalGuides };
 
+    const step = getGridStep();
+
+    // Snap points for the dragging element: [left, center, right]
+    const dragPointsX = [
+      { val: x, type: 'start' },
+      { val: x + width / 2, type: 'center' },
+      { val: x + width, type: 'end' }
+    ];
+    // [top, center, bottom]
+    const dragPointsY = [
+      { val: y, type: 'start' },
+      { val: y + height / 2, type: 'center' },
+      { val: y + height, type: 'end' }
+    ];
+
+    // 1. Snapping to Canvas Boundaries & Center
+    const canvasPointsX = [0, canvasSize.width / 2, canvasSize.width];
+    const canvasPointsY = [0, canvasSize.height / 2, canvasSize.height];
+
+    dragPointsX.forEach(dx => {
+      canvasPointsX.forEach(cx => {
+        if (Math.abs(dx.val - cx) < SNAP_THRESHOLD) {
+          snappedX = dx.type === 'start' ? cx : (dx.type === 'center' ? cx - width / 2 : cx - width);
+          verticalGuides.push(cx);
+          foundV = true;
+        }
+      });
+    });
+
+    dragPointsY.forEach(dy => {
+      canvasPointsY.forEach(cy => {
+        if (Math.abs(dy.val - cy) < SNAP_THRESHOLD) {
+          snappedY = dy.type === 'start' ? cy : (dy.type === 'center' ? cy - height / 2 : cy - height);
+          horizontalGuides.push(cy);
+          foundH = true;
+        }
+      });
+    });
+
+    // 2. Snapping to Other Elements
     const otherElements = elements.filter(el => el.id !== draggingId && !el.parentId);
     
-    // Potential snap points for the dragging element
-    const dragPoints = {
-      x: [x, x + width / 2, x + width],
-      y: [y, y + height / 2, y + height]
-    };
-
     otherElements.forEach(el => {
-      const elPoints = {
-        x: [el.x, el.x + el.width / 2, el.x + el.width],
-        y: [el.y, el.y + el.height / 2, el.y + el.height]
-      };
+      const elPointsX = [el.x, el.x + el.width / 2, el.x + el.width];
+      const elPointsY = [el.y, el.y + el.height / 2, el.y + el.height];
 
-      // Check vertical snapping
-      dragPoints.x.forEach((dx, di) => {
-        elPoints.x.forEach((ex, ei) => {
-          if (Math.abs(dx - ex) < SNAP_THRESHOLD) {
-            const diff = ex - dx;
-            snappedX += diff;
+      dragPointsX.forEach(dx => {
+        elPointsX.forEach(ex => {
+          if (!foundV && Math.abs(dx.val - ex) < SNAP_THRESHOLD) {
+            snappedX = dx.type === 'start' ? ex : (dx.type === 'center' ? ex - width / 2 : ex - width);
             verticalGuides.push(ex);
+            foundV = true;
           }
         });
       });
 
-      // Check horizontal snapping
-      dragPoints.y.forEach((dy, di) => {
-        elPoints.y.forEach((ey, ei) => {
-          if (Math.abs(dy - ey) < SNAP_THRESHOLD) {
-            const diff = ey - dy;
-            snappedY += diff;
+      dragPointsY.forEach(dy => {
+        elPointsY.forEach(ey => {
+          if (!foundH && Math.abs(dy.val - ey) < SNAP_THRESHOLD) {
+            snappedY = dy.type === 'start' ? ey : (dy.type === 'center' ? ey - height / 2 : ey - height);
             horizontalGuides.push(ey);
+            foundH = true;
           }
         });
       });
     });
+
+    // 3. Grid Snapping (only if no smart guide found for that axis)
+    if (!foundV && snapToGrid) {
+      snappedX = Math.round(snappedX / step.x) * step.x;
+    }
+    if (!foundH && snapToGrid) {
+      snappedY = Math.round(snappedY / step.y) * step.y;
+    }
 
     return { 
       snappedX, 
@@ -115,20 +155,16 @@ export function useCanvasInteractions({
         let nextX = event.clientX - canvasRect.left - interaction.pointerOffset.x;
         let nextY = event.clientY - canvasRect.top - interaction.pointerOffset.y;
 
-        // Apply Smart Snapping first, then Grid if enabled and no smart guides found
         const { snappedX, snappedY, verticalGuides, horizontalGuides } = calculateSmartSnapping(
           nextX, nextY, element.width, element.height, element.id
         );
 
         setGuides({ vertical: verticalGuides, horizontal: horizontalGuides });
 
-        const finalX = verticalGuides.length > 0 ? snappedX : snapToValue(nextX, step.x);
-        const finalY = horizontalGuides.length > 0 ? snappedY : snapToValue(nextY, step.y);
-
         updateActivePageElements((prev) =>
           prev.map((el) => {
             if (el.id !== interaction.id) return el;
-            return { ...el, x: finalX, y: finalY };
+            return { ...el, x: snappedX, y: snappedY };
           }),
         );
       }
@@ -155,7 +191,6 @@ export function useCanvasInteractions({
       setGuides({ vertical: [], horizontal: [] });
       if (interaction?.type === "drag-element") {
         const canvasRect = canvasRef.current.getBoundingClientRect();
-        const step = getGridStep();
         const element = elements.find(el => el.id === interaction.id);
         
         updateActivePageElements(prev => prev.map(el => {
@@ -165,24 +200,19 @@ export function useCanvasInteractions({
             let rawX = event.clientX - canvasRect.left - interaction.pointerOffset.x;
             let rawY = event.clientY - canvasRect.top - interaction.pointerOffset.y;
 
-            // Use the same snap logic for final drop
-            const { snappedX, snappedY, verticalGuides, horizontalGuides } = calculateSmartSnapping(
+            const { snappedX, snappedY } = calculateSmartSnapping(
               rawX, rawY, element.width, element.height, element.id
             );
 
-            let finalX = verticalGuides.length > 0 ? snappedX : snapToValue(rawX, step.x);
-            let finalY = horizontalGuides.length > 0 ? snappedY : snapToValue(rawY, step.y);
+            let finalX = snappedX;
+            let finalY = snappedY;
 
             if (targetParentId) {
               const parentNode = document.querySelector(`[data-id="${targetParentId}"]`);
               if (parentNode) {
                 const parentRect = parentNode.getBoundingClientRect();
-                // When dropping into a parent, we need to convert global canvas coords to local
-                finalX = (event.clientX - parentRect.left - interaction.pointerOffset.x);
-                finalY = (event.clientY - parentRect.top - interaction.pointerOffset.y);
-                // Also apply grid snapping to local coords
-                finalX = snapToValue(finalX, step.x);
-                finalY = snapToValue(finalY, step.y);
+                finalX = snapToValue(event.clientX - parentRect.left - interaction.pointerOffset.x, step.x);
+                finalY = snapToValue(event.clientY - parentRect.top - interaction.pointerOffset.y, step.y);
               }
             }
 
