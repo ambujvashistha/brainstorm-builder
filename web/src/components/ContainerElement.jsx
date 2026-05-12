@@ -21,7 +21,7 @@ export default function ContainerElement({ element, children, onAddChild, isPrev
     width: "100%",
     height: "100%",
     boxSizing: "border-box",
-    overflow: isScrollable ? (isHorizontal ? "visible" : "auto") : "visible",
+    overflow: isScrollable ? (isHorizontal ? "visible" : "auto") : "hidden",
     boxShadow: element.shadow || (isStackHeader ? "0 1px 4px rgba(0,0,0,0.05)" : "none"),
     borderBottom: isStackHeader ? "1px solid #D2D2D7" : "none",
     position: "relative",

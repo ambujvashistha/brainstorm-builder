@@ -13,6 +13,7 @@ export const ELEMENT_TYPES = {
   FLAT_LIST_HORIZONTAL: "flat-list-horizontal",
   STACK_HEADER: "stack-header",
   DRAWER: "drawer",
+  ICON: "icon",
 };
 
 export const elementRegistry = {
@@ -28,6 +29,15 @@ export const elementRegistry = {
       letterSpacing: 0,
     },
     defaultSize: { width: 150, height: 40 },
+  },
+  [ELEMENT_TYPES.ICON]: {
+    label: "Icon",
+    defaultProps: {
+      iconName: "Circle",
+      size: 24,
+      color: "#191c1d",
+    },
+    defaultSize: { width: 40, height: 40 },
   },
   [ELEMENT_TYPES.IMAGE]: {
     label: "Image",

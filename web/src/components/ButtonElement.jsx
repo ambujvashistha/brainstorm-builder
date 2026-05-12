@@ -21,14 +21,27 @@ export default function ButtonElement({
     border: "none",
     cursor: "pointer",
     boxShadow: element.shadow || "none",
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
+    whiteSpace: "pre-wrap",
+    textAlign: "center",
+    overflow: "hidden",
   };
 
   if (isEditing) {
     return (
-      <input
+      <textarea
         autoFocus
         className="canvas-input"
-        style={{ ...style, background: element.backgroundColor, outline: "none" }}
+        style={{ 
+          ...style, 
+          background: element.backgroundColor, 
+          outline: "none",
+          resize: "none",
+          fontFamily: "inherit",
+          border: "none",
+          padding: element.padding || 12,
+        }}
         value={draftText}
         onChange={(e) => onDraftTextChange(e.target.value)}
         onBlur={onDraftTextCommit}
@@ -39,7 +52,9 @@ export default function ButtonElement({
 
   return (
     <div style={style}>
-      {element.text}
+      <span style={{ width: "100%" }}>
+        {element.text}
+      </span>
     </div>
   );
 }
