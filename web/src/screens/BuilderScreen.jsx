@@ -427,6 +427,12 @@ export default function BuilderScreen() {
               Code
             </button>
             <button
+              className={`tab-button ${rightSidebarTab === "json" ? "is-active" : ""}`}
+              onClick={() => setRightSidebarTab("json")}
+            >
+              JSON
+            </button>
+            <button
               className={`tab-button ${rightSidebarTab === "layers" ? "is-active" : ""}`}
               onClick={() => setRightSidebarTab("layers")}
             >
@@ -444,6 +450,36 @@ export default function BuilderScreen() {
                 updateNavigation={updateNavigation}
                 onDelete={() => deleteElement(activeId)}
               />
+            )}
+            {rightSidebarTab === "json" && (
+              <div className="code-panel">
+                <div className="code-panel__header">
+                  <span>Project JSON</span>
+                  <button className="copy-button" onClick={() => {
+                    const data = JSON.stringify({ pages, navigationConfig }, null, 2);
+                    navigator.clipboard.writeText(data);
+                    alert("JSON copied!");
+                  }}>
+                    Copy
+                  </button>
+                </div>
+                <textarea 
+                  className="code-preview" 
+                  style={{ width: "100%", height: "100%", border: "none", resize: "none", outline: "none", backgroundColor: "#1E1E1E", color: "#D4D4D4" }}
+                  value={JSON.stringify({ pages, navigationConfig }, null, 2)}
+                  onChange={(e) => {
+                    try {
+                      const parsed = JSON.parse(e.target.value);
+                      if (parsed.pages && parsed.navigationConfig) {
+                        setPages(parsed.pages);
+                        setNavigationConfig(parsed.navigationConfig);
+                      }
+                    } catch (err) {
+                      // Silently fail on invalid JSON while typing
+                    }
+                  }}
+                />
+              </div>
             )}
             {rightSidebarTab === "code" && (
               <div className="code-panel">
