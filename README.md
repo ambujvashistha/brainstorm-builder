@@ -26,43 +26,49 @@ The editor provides a seamless developer experience with real-time JSON schema s
 
 ## Screenshots
 
-### Workspace & Canvas
+### 🖥️ Workspace & Canvas
 
-| Dark Theme | Light Theme | Grid & Snapping |
-|:---:|:---:|:---:|
-| <img src="screenshots/01_workspace_dark.png" width="250" /> | <img src="screenshots/02_workspace_light.png" width="250" /> | <img src="screenshots/03_grid_snapping.png" width="250" /> |
+<img src="screenshots/01_workspace_dark.png" width="100%" alt="Dark Theme" />
 
 **Dark Theme** — The primary workspace uses a deep, glassmorphism-inspired dark theme designed for focus and reduced eye strain. The multi-sidebar layout keeps assets, layers, and inspectors easily accessible.
 
+---
+
+<img src="screenshots/02_workspace_light.png" width="100%" alt="Light Theme" />
+
 **Light Theme** — For those who prefer a brighter environment, the editor features a clean, high-contrast light theme. All UI elements, from the canvas to the sidebar tabs, adapt perfectly to the light color palette.
+
+---
+
+<img src="screenshots/03_grid_snapping.png" width="100%" alt="Grid & Snapping" />
 
 **Grid & Snapping** — High-precision alignment guides. The engine provides real-time snapping to grid lines and relative positioning to other elements, ensuring pixel-perfect layouts without manual coordinate entry.
 
 ---
 
-### Inspector & Code Preview
+### 🔍 Inspector & Code Preview
 
-| Properties Inspector | Live Code Preview | Page Management |
-|:---:|:---:|:---:|
-| <img src="screenshots/04_inspector.png" width="250" /> | <img src="screenshots/05_code_preview.png" width="250" /> | <img src="screenshots/06_pages.png" width="250" /> |
+<img src="screenshots/04_inspector.png" width="100%" alt="Properties Inspector" />
 
 **Properties Inspector** — Deeply customize every element. Change typography, colors, layout properties (Flexbox), and interaction types (Navigation, Toggle Drawer) through a clean, intuitive interface.
 
-**Live Code Preview** — See the React Native code as you build. The right sidebar can switch between the Inspector and a live-updating code view, showing the exact JSX and Stylesheet code that will be exported.
+---
 
-**Page Management** — Build multi-screen applications. The Pages tab allows you to create, rename, and manage different screens, with built-in support for React Navigation tab and drawer structures.
+<img src="screenshots/05_code_preview.png" width="100%" alt="Live Code Preview" />
+
+**Live Code Preview** — See the React Native code as you build. The right sidebar can switch between the Inspector and a live-updating code view, showing the exact JSX and Stylesheet code that will be exported.
 
 ---
 
-### Preview & Export
+### 🚀 Preview & Export
 
-| Preview Mode | Navigation Testing | Export App |
-|:---:|:---:|:---:|
-| <img src="screenshots/07_preview.png" width="250" /> | <img src="screenshots/08_navigation.png" width="250" /> | <img src="screenshots/09_export.png" width="250" /> |
+<img src="screenshots/07_preview.png" width="100%" alt="Preview Mode" />
 
 **Preview Mode** — Test your app's feel instantly. Toggle Preview Mode to hide the editor chrome and interact with your UI as it would appear on a real device, including functioning navigation and button interactions.
 
-**Navigation Testing** — Verify your app flow. Elements set with "Navigate" interactions will actually switch between your defined pages in Preview Mode, allowing for rapid prototyping of user journeys.
+---
+
+<img src="screenshots/09_export.png" width="100%" alt="Export App" />
 
 **Export App** — From design to code in one click. The export system bundles your entire project — including screens, navigation config, and component registry — into a clean ZIP file ready for Expo.
 
