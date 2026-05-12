@@ -26,7 +26,7 @@ Explain the core patterns that make the system scalable:
 
 ## 4. Commit History & Code Quality (1 Minute)
 *   **Clean History:** "I follow a feature-driven commit strategy (feat/refactor/fix) to ensure the evolution of the codebase is traceable."
-*   **Type Safety & Extensibility:** Show `src/utils/exportToReactNative.js`. "The export utility is designed as a mapping system, making it easy to support other frameworks like Flutter or Swift UI in the future."
+*   **Type Safety & Extensibility:** Show `src/export/exportToReactNative.js`. "The export utility is designed as a mapping system, making it easy to support other frameworks like Flutter or Swift UI in the future."
 *   **Performance:** "I optimized the canvas by minimizing re-renders using `React.memo` and scoped state updates, maintaining a steady 60 FPS even with complex layouts."
 
 ## 5. Summary & Future Scope (30 Seconds)
